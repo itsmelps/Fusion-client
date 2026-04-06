@@ -17,8 +17,7 @@ import InventoryIndex from "./Modules/Inventory/components/InventoryIndex";
 import PurchaseRoutes from "./Modules/Purchase/PurchaseRoute.jsx";
 import PatentRoutes from "./Modules/Patent/routes/PatentRoutes";
 
-// eslint-disable-next-line import/no-unresolved
-import UserBreadcrumbs from "./Modules/Scholarship/user/components/UserBreadcumbs";
+import UserBreadcrumbs from "./Modules/Scholarship/components/common/UserBreadcumbs";
 import OtherAcadProcedures from "./Modules/Otheracademic/OtherAcademicProcedures";
 import PendingReqs from "./Modules/Visitors_Hostel/pendingRequests.jsx";
 import { DesignationsProvider } from "./Modules/Iwd/helper/designationContext";
@@ -37,7 +36,7 @@ const ApplicationStatusTimeline = lazy(
 
 const HealthCenter = lazy(() => import("./Modules/Health Center"));
 const ConvenorBreadcumbs = lazy(
-  () => import("./Modules/Scholarship/convenor/components/ConvenorBreadcumbs"),
+  () => import("./Modules/Scholarship/components/common/ConvenorBreadcumbs"),
 );
 const HostelPage = lazy(() => import("./Modules/Hostel-Management/index"));
 const IwdModule = lazy(() => import("./Modules/Iwd/index"));
@@ -512,9 +511,14 @@ export default function App() {
           element={
             <Layout>
               <Suspense fallback={<div>Loading .... </div>}>
-                {role === "spacsconvenor" && <ConvenorBreadcumbs />}
+                {(role === "spacsconvenor" || role === "spacsassistant") && (
+                  <ConvenorBreadcumbs />
+                )}
                 {role === "student" && <UserBreadcrumbs />}
-                {role === "spacsassistant" && <ConvenorBreadcumbs />}
+                {import.meta.env.DEV &&
+                  role !== "spacsconvenor" &&
+                  role !== "spacsassistant" &&
+                  role !== "student" && <UserBreadcrumbs />}
               </Suspense>
             </Layout>
           }
