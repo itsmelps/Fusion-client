@@ -17,6 +17,8 @@ export default function ScholarshipStatus() {
   const [page, setPage] = useState(1);
   const [showStatus, setShowStatus] = useState(false);
   const [applications, setApplications] = useState([]);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusError, setStatusError] = useState(null);
 
   const fetchFnMap = {
     2: fetchMCMStatus,
@@ -28,11 +30,20 @@ export default function ScholarshipStatus() {
   const fetchStatus = async (apiFn) => {
     setShowStatus(true);
     setApplications([]);
+    setStatusError(null);
+    setStatusLoading(true);
     try {
       const data = await apiFn();
-      setApplications(data);
+      setApplications(Array.isArray(data) ? data : []);
     } catch (fetchErr) {
       console.error("Fetch error:", fetchErr);
+      setApplications([]);
+      setStatusError(
+        (fetchErr && fetchErr.message) ||
+          "Could not load status. Check that you are logged in and the server is running.",
+      );
+    } finally {
+      setStatusLoading(false);
     }
   };
 
@@ -101,8 +112,16 @@ export default function ScholarshipStatus() {
         >
           Check Status
         </Button>
-      ) : applications.length === 0 ? (
+      ) : statusLoading ? (
         <Loader size="lg" />
+      ) : statusError ? (
+        <Text c="red" size="sm">
+          {statusError}
+        </Text>
+      ) : applications.length === 0 ? (
+        <Text c="dimmed" size="sm">
+          No application on file for this award yet, or no status recorded.
+        </Text>
       ) : (
         <MantineReactTable table={table} />
       )}
@@ -121,6 +140,8 @@ export default function ScholarshipStatus() {
                 onClick={() => {
                   setPage(p);
                   setShowStatus(false);
+                  setStatusError(null);
+                  setApplications([]);
                 }}
               >
                 Check Status

@@ -15,6 +15,7 @@ import { validateGrandTotal } from "../../utils/helpers";
 
 export default function DirectorGoldForm() {
   const [formData, setFormData] = useState({
+    award_type: "Director's Gold",
     justification: "",
     correspondence_address: "",
     nearest_policestation: "",

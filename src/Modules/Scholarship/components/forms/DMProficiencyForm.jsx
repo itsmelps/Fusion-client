@@ -18,7 +18,7 @@ import { submitPDM } from "../../services/api";
 export default function DMProficiencyForm() {
   const form = useForm({
     initialValues: {
-      award_type: "DMProficiencyform",
+      award_type: "D&M Proficiency Gold Medal",
       justification: "",
       correspondence_address: "",
       nearest_policestation: "",

@@ -57,8 +57,11 @@ export const buildCsvHelpers = (filename = "export") => {
  * user/PreviousWinners.jsx and convenor/previousWinnerC.jsx.
  */
 export const normaliseWinnersResponse = (data) => {
-  if (data.result !== "Success") return [];
-  const { student_name, student_program, roll } = data;
+  if (!data || data.result !== "Success") return [];
+  const student_name = data.student_name || [];
+  const roll = data.roll || [];
+  const student_program = data.student_program || [];
+  if (!Array.isArray(student_name)) return [];
   return student_name.map((name, index) => ({
     name,
     roll: roll[index],

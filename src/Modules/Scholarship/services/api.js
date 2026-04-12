@@ -110,7 +110,8 @@ export const fetchMCMStatus = async () => {
     headers: getJsonHeaders(),
   });
   if (!res.ok) throw new Error(res.statusText);
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 };
 
 // ── Director Silver Medal ─────────────────────────────────────────────────────
@@ -150,7 +151,8 @@ export const fetchSilverStatus = async () => {
     headers: getJsonHeaders(),
   });
   if (!res.ok) throw new Error(res.statusText);
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 };
 
 // ── Director Gold Medal ───────────────────────────────────────────────────────
@@ -190,7 +192,8 @@ export const fetchGoldStatus = async () => {
     headers: getJsonHeaders(),
   });
   if (!res.ok) throw new Error(res.statusText);
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 };
 
 // ── D&M Proficiency Gold Medal ────────────────────────────────────────────────
@@ -230,7 +233,8 @@ export const fetchPDMStatus = async () => {
     headers: getJsonHeaders(),
   });
   if (!res.ok) throw new Error(res.statusText);
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 };
 
 // ── Awards / Catalog ──────────────────────────────────────────────────────────

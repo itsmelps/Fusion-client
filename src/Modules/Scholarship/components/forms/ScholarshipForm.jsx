@@ -11,6 +11,8 @@ import {
   Group,
   Select,
   NumberInput,
+  Loader,
+  Center,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { checkWindow, submitMCM } from "../../services/api";
@@ -21,12 +23,17 @@ function ScholarshipForm() {
   const [step, setStep] = useState(1);
   const [uploadStatus, setUploadStatus] = useState({});
   const [documents, setDocuments] = useState({});
-  const [showForm, setShowForm] = useState({});
+  const [checkLoading, setCheckLoading] = useState(true);
+  const [eligibility, setEligibility] = useState({
+    result: "Success",
+    message: "",
+  });
 
   const form = useForm({
     mode: "uncontrolled",
     validateInputOnBlur: true,
     initialValues: {
+      award_type: "Merit-cum-means Scholarship",
       brother_name: "",
       brother_occupation: "",
       sister_name: "",
@@ -138,309 +145,349 @@ function ScholarshipForm() {
   };
 
   useEffect(() => {
-    checkWindow("MCM Scholarship")
-      .then((data) => setShowForm(data))
+    let cancelled = false;
+    setCheckLoading(true);
+    checkWindow("Merit-cum-means Scholarship")
+      .then((data) => {
+        if (!cancelled) {
+          setEligibility({
+            result: data.result || "Failure",
+            message: data.message || "",
+          });
+        }
+      })
       .catch((err) => {
         console.error("An error occurred:", err);
-        alert("Failed to get form data");
+        if (!cancelled) {
+          setEligibility({
+            result: "Failure",
+            message:
+              (err && err.message) ||
+              "Could not verify the application window. You can still try to submit.",
+          });
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCheckLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  if (checkLoading) {
+    return (
+      <Container size="lg">
+        <Center py="xl">
+          <Loader size="lg" />
+        </Center>
+      </Container>
+    );
+  }
+
+  const windowOpen = eligibility.result === "Success";
 
   return (
     <Container size="lg">
-      {showForm.result === "Success" ? (
-        <Paper radius="md" p="sm">
-          <Title order={2} mb="lg">
-            {step === 1
-              ? "Application Form for Merit Cum Means (MCM) Scholarship:"
-              : "Document Upload"}
-          </Title>
-          {step === 1 && (
-            <form onSubmit={handleNext}>
-              <Grid>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <Select
-                    label="Father's Occupation"
-                    placeholder="Select father's occupation"
-                    data={[
-                      { value: "government", label: "Government" },
-                      { value: "private", label: "Private" },
-                      { value: "public", label: "Public" },
-                      { value: "business", label: "Business" },
-                      { value: "medical", label: "Medical" },
-                      { value: "consultant", label: "Consultant" },
-                      { value: "pensioners", label: "Pensioners" },
-                    ]}
-                    mt="md"
-                    {...form.getInputProps("father_occ")}
-                    required
-                  />
-                  <Select
-                    label="Mother's Occupation"
-                    placeholder="Select mother's occupation"
-                    data={[
-                      { value: "EMPLOYED", label: "Employed" },
-                      { value: "HOUSE_WIFE", label: "House Wife" },
-                    ]}
-                    mt="md"
-                    {...form.getInputProps("mother_occ")}
-                    required
-                  />
-                  <TextInput
-                    label="Brother's Name"
-                    placeholder="Enter brother's name"
-                    {...form.getInputProps("brother_name")}
-                    mt="md"
-                    maxLength={200}
-                  />
-                  <TextInput
-                    label="Sister's Occupation"
-                    placeholder="Enter sister's occupation"
-                    mt="md"
-                    {...form.getInputProps("sister_occupation")}
-                    maxLength={200}
-                  />
-                  <NumberInput
-                    label="Mother's Annual Income"
-                    placeholder="Enter mother's income"
-                    mt="md"
-                    min={0}
-                    error={form.errors.income_mother}
-                    {...form.getInputProps("income_mother")}
-                    required
-                  />
-                  <NumberInput
-                    label="No of Four Wheeler"
-                    placeholder="Enter number of 4-wheeler vehicles"
-                    mt="md"
-                    min={0}
-                    max={100}
-                    error={form.errors.four_wheeler}
-                    {...form.getInputProps("four_wheeler")}
-                    required
-                  />
-                  <NumberInput
-                    label="No of Two Wheeler"
-                    placeholder="Enter number of 2-wheeler vehicles"
-                    mt="md"
-                    min={0}
-                    max={100}
-                    error={form.errors.two_wheeler}
-                    {...form.getInputProps("two_wheeler")}
-                    required
-                  />
-                  <TextInput
-                    label="Two Wheeler Description"
-                    placeholder="Enter 2-wheeler description"
-                    mt="md"
-                    {...form.getInputProps("two_wheeler_desc")}
-                    maxLength={200}
-                  />
-                  <TextInput
-                    label="House"
-                    placeholder="Enter house description"
-                    mt="md"
-                    {...form.getInputProps("house")}
-                    required
-                    maxLength={200}
-                  />
-                  <NumberInput
-                    label="Plot Area"
-                    placeholder="Enter plot area in square feet"
-                    mt="md"
-                    min={0}
-                    error={form.errors.plot_area}
-                    {...form.getInputProps("plot_area")}
-                    required
-                  />
-                  <NumberInput
-                    label="Constructed Area"
-                    placeholder="Enter constructed area in square feet"
-                    mt="md"
-                    min={0}
-                    error={form.errors.constructed_area}
-                    {...form.getInputProps("constructed_area")}
-                    required
-                  />
-                  <NumberInput
-                    label="Annual Income"
-                    placeholder="Enter annual income"
-                    mt="md"
-                    min={0}
-                    error={form.errors.annual_income}
-                    {...form.getInputProps("annual_income")}
-                    required
-                  />
-                  <TextInput
-                    label="College Name"
-                    placeholder="Enter College Name"
-                    mt="md"
-                    {...form.getInputProps("college_name")}
-                    required
-                    maxLength={200}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <TextInput
-                    label="Father's Occupation Description"
-                    placeholder="Describe father's occupation"
-                    mt="md"
-                    {...form.getInputProps("father_occ_desc")}
-                    required
-                    maxLength={200}
-                  />
-                  <TextInput
-                    label="Mother's Occupation Description"
-                    placeholder="Describe mother's occupation"
-                    mt="md"
-                    {...form.getInputProps("mother_occ_desc")}
-                    required
-                    maxLength={200}
-                  />
-                  <TextInput
-                    label="Brother's Occupation"
-                    placeholder="Enter brother's occupation"
-                    mt="md"
-                    {...form.getInputProps("brother_occupation")}
-                    maxLength={200}
-                  />
-                  <TextInput
-                    label="Sister's Name"
-                    placeholder="Enter sister's name"
-                    mt="md"
-                    {...form.getInputProps("sister_name")}
-                    maxLength={200}
-                  />
-                  <NumberInput
-                    label="Father's Annual Income"
-                    placeholder="Enter father's income"
-                    mt="md"
-                    min={0}
-                    error={form.errors.income_father}
-                    {...form.getInputProps("income_father")}
-                    required
-                  />
-                  <NumberInput
-                    label="Other Sources Annual Income"
-                    placeholder="Enter other sources' income"
-                    mt="md"
-                    min={0}
-                    error={form.errors.income_other}
-                    {...form.getInputProps("income_other")}
-                    required
-                  />
-                  <TextInput
-                    label="Four Wheeler Description"
-                    placeholder="Enter vehicle description"
-                    mt="md"
-                    {...form.getInputProps("four_wheeler_desc")}
-                    maxLength={200}
-                  />
-                  <NumberInput
-                    label="School Fee"
-                    placeholder="Enter School Fee"
-                    mt="md"
-                    min={0}
-                    error={form.errors.school_fee}
-                    {...form.getInputProps("school_fee")}
-                    required
-                  />
-                  <TextInput
-                    label="School Name"
-                    placeholder="Enter School Name"
-                    mt="md"
-                    {...form.getInputProps("school_name")}
-                    required
-                    maxLength={200}
-                  />
-                  <TextInput
-                    label="Bank Name"
-                    placeholder="Enter Bank Name"
-                    mt="md"
-                    {...form.getInputProps("bank_name")}
-                    required
-                    maxLength={200}
-                  />
-                  <NumberInput
-                    label="Loan Amount"
-                    placeholder="Enter Loan Amount"
-                    mt="md"
-                    min={0}
-                    error={form.errors.loan_amount}
-                    {...form.getInputProps("loan_amount")}
-                    required
-                  />
-                  <NumberInput
-                    label="College Fee"
-                    placeholder="Enter College Fee"
-                    mt="md"
-                    min={0}
-                    error={form.errors.college_fee}
-                    {...form.getInputProps("college_fee")}
-                    required
-                  />
-                </Grid.Col>
-              </Grid>
-              <Group position="right" mt="xl">
-                <Button type="submit" color="blue">
-                  Next
-                </Button>
-              </Group>
-            </form>
-          )}
+      <Paper radius="md" p="sm">
+        <Alert
+          color={windowOpen ? "green" : "yellow"}
+          title={windowOpen ? "Application window open" : "Application window"}
+          mb="md"
+        >
+          {eligibility.message ||
+            (windowOpen
+              ? "You may submit your MCM application."
+              : "The official window may be closed; the form is available below.")}
+        </Alert>
+        <Title order={2} mb="lg">
+          {step === 1
+            ? "Application Form for Merit Cum Means (MCM) Scholarship:"
+            : "Document Upload"}
+        </Title>
+        {step === 1 && (
+          <form onSubmit={handleNext}>
+            <Grid>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Select
+                  label="Father's Occupation"
+                  placeholder="Select father's occupation"
+                  data={[
+                    { value: "government", label: "Government" },
+                    { value: "private", label: "Private" },
+                    { value: "public", label: "Public" },
+                    { value: "business", label: "Business" },
+                    { value: "medical", label: "Medical" },
+                    { value: "consultant", label: "Consultant" },
+                    { value: "pensioners", label: "Pensioners" },
+                  ]}
+                  mt="md"
+                  {...form.getInputProps("father_occ")}
+                  required
+                />
+                <Select
+                  label="Mother's Occupation"
+                  placeholder="Select mother's occupation"
+                  data={[
+                    { value: "EMPLOYED", label: "Employed" },
+                    { value: "HOUSE_WIFE", label: "House Wife" },
+                  ]}
+                  mt="md"
+                  {...form.getInputProps("mother_occ")}
+                  required
+                />
+                <TextInput
+                  label="Brother's Name"
+                  placeholder="Enter brother's name"
+                  {...form.getInputProps("brother_name")}
+                  mt="md"
+                  maxLength={200}
+                />
+                <TextInput
+                  label="Sister's Occupation"
+                  placeholder="Enter sister's occupation"
+                  mt="md"
+                  {...form.getInputProps("sister_occupation")}
+                  maxLength={200}
+                />
+                <NumberInput
+                  label="Mother's Annual Income"
+                  placeholder="Enter mother's income"
+                  mt="md"
+                  min={0}
+                  error={form.errors.income_mother}
+                  {...form.getInputProps("income_mother")}
+                  required
+                />
+                <NumberInput
+                  label="No of Four Wheeler"
+                  placeholder="Enter number of 4-wheeler vehicles"
+                  mt="md"
+                  min={0}
+                  max={100}
+                  error={form.errors.four_wheeler}
+                  {...form.getInputProps("four_wheeler")}
+                  required
+                />
+                <NumberInput
+                  label="No of Two Wheeler"
+                  placeholder="Enter number of 2-wheeler vehicles"
+                  mt="md"
+                  min={0}
+                  max={100}
+                  error={form.errors.two_wheeler}
+                  {...form.getInputProps("two_wheeler")}
+                  required
+                />
+                <TextInput
+                  label="Two Wheeler Description"
+                  placeholder="Enter 2-wheeler description"
+                  mt="md"
+                  {...form.getInputProps("two_wheeler_desc")}
+                  maxLength={200}
+                />
+                <TextInput
+                  label="House"
+                  placeholder="Enter house description"
+                  mt="md"
+                  {...form.getInputProps("house")}
+                  required
+                  maxLength={200}
+                />
+                <NumberInput
+                  label="Plot Area"
+                  placeholder="Enter plot area in square feet"
+                  mt="md"
+                  min={0}
+                  error={form.errors.plot_area}
+                  {...form.getInputProps("plot_area")}
+                  required
+                />
+                <NumberInput
+                  label="Constructed Area"
+                  placeholder="Enter constructed area in square feet"
+                  mt="md"
+                  min={0}
+                  error={form.errors.constructed_area}
+                  {...form.getInputProps("constructed_area")}
+                  required
+                />
+                <NumberInput
+                  label="Annual Income"
+                  placeholder="Enter annual income"
+                  mt="md"
+                  min={0}
+                  error={form.errors.annual_income}
+                  {...form.getInputProps("annual_income")}
+                  required
+                />
+                <TextInput
+                  label="College Name"
+                  placeholder="Enter College Name"
+                  mt="md"
+                  {...form.getInputProps("college_name")}
+                  required
+                  maxLength={200}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Father's Occupation Description"
+                  placeholder="Describe father's occupation"
+                  mt="md"
+                  {...form.getInputProps("father_occ_desc")}
+                  required
+                  maxLength={200}
+                />
+                <TextInput
+                  label="Mother's Occupation Description"
+                  placeholder="Describe mother's occupation"
+                  mt="md"
+                  {...form.getInputProps("mother_occ_desc")}
+                  required
+                  maxLength={200}
+                />
+                <TextInput
+                  label="Brother's Occupation"
+                  placeholder="Enter brother's occupation"
+                  mt="md"
+                  {...form.getInputProps("brother_occupation")}
+                  maxLength={200}
+                />
+                <TextInput
+                  label="Sister's Name"
+                  placeholder="Enter sister's name"
+                  mt="md"
+                  {...form.getInputProps("sister_name")}
+                  maxLength={200}
+                />
+                <NumberInput
+                  label="Father's Annual Income"
+                  placeholder="Enter father's income"
+                  mt="md"
+                  min={0}
+                  error={form.errors.income_father}
+                  {...form.getInputProps("income_father")}
+                  required
+                />
+                <NumberInput
+                  label="Other Sources Annual Income"
+                  placeholder="Enter other sources' income"
+                  mt="md"
+                  min={0}
+                  error={form.errors.income_other}
+                  {...form.getInputProps("income_other")}
+                  required
+                />
+                <TextInput
+                  label="Four Wheeler Description"
+                  placeholder="Enter vehicle description"
+                  mt="md"
+                  {...form.getInputProps("four_wheeler_desc")}
+                  maxLength={200}
+                />
+                <NumberInput
+                  label="School Fee"
+                  placeholder="Enter School Fee"
+                  mt="md"
+                  min={0}
+                  error={form.errors.school_fee}
+                  {...form.getInputProps("school_fee")}
+                  required
+                />
+                <TextInput
+                  label="School Name"
+                  placeholder="Enter School Name"
+                  mt="md"
+                  {...form.getInputProps("school_name")}
+                  required
+                  maxLength={200}
+                />
+                <TextInput
+                  label="Bank Name"
+                  placeholder="Enter Bank Name"
+                  mt="md"
+                  {...form.getInputProps("bank_name")}
+                  required
+                  maxLength={200}
+                />
+                <NumberInput
+                  label="Loan Amount"
+                  placeholder="Enter Loan Amount"
+                  mt="md"
+                  min={0}
+                  error={form.errors.loan_amount}
+                  {...form.getInputProps("loan_amount")}
+                  required
+                />
+                <NumberInput
+                  label="College Fee"
+                  placeholder="Enter College Fee"
+                  mt="md"
+                  min={0}
+                  error={form.errors.college_fee}
+                  {...form.getInputProps("college_fee")}
+                  required
+                />
+              </Grid.Col>
+            </Grid>
+            <Group justify="flex-end" mt="xl">
+              <Button type="submit" color="blue">
+                Next
+              </Button>
+            </Group>
+          </form>
+        )}
 
-          {step === 2 && (
-            <>
-              <Alert title="Important" color="blue" mb="lg">
-                Please upload all required documents.
-              </Alert>
-              <Grid>
-                {documentFields.map((doc) => {
-                  const inputId = `mcm-doc-${doc.id}`;
-                  return (
-                    <Grid.Col key={doc.id} span={{ base: 12, md: 6 }}>
-                      <Text size="sm" fw={500} mb="xs">
-                        {doc.name}
-                      </Text>
-                      <input
-                        id={inputId}
-                        type="file"
-                        accept={doc.type}
-                        style={{ display: "none" }}
-                        onChange={(e) =>
-                          handleFileChange(doc.id, e.target.files?.[0] ?? null)
-                        }
-                      />
-                      <Button
-                        component="label"
-                        htmlFor={inputId}
-                        fullWidth
-                        color={
-                          uploadStatus[doc.id] === "success" ? "green" : "gray"
-                        }
-                      >
-                        {uploadStatus[doc.id] === "success"
-                          ? "Uploaded"
-                          : `Choose ${doc.name}`}
-                      </Button>
-                    </Grid.Col>
-                  );
-                })}
-              </Grid>
-              <Group position="right" mt="xl">
-                <Button variant="default" onClick={() => setStep(1)}>
-                  Back
-                </Button>
-                <Button color="blue" onClick={handleSubmit}>
-                  Submit All Documents
-                </Button>
-              </Group>
-            </>
-          )}
-        </Paper>
-      ) : (
-        <h1>{showForm.message}</h1>
-      )}
+        {step === 2 && (
+          <>
+            <Alert title="Important" color="blue" mb="lg">
+              Please upload all required documents.
+            </Alert>
+            <Grid>
+              {documentFields.map((doc) => {
+                const inputId = `mcm-doc-${doc.id}`;
+                return (
+                  <Grid.Col key={doc.id} span={{ base: 12, md: 6 }}>
+                    <Text size="sm" fw={500} mb="xs">
+                      {doc.name}
+                    </Text>
+                    <input
+                      id={inputId}
+                      type="file"
+                      accept={doc.type}
+                      style={{ display: "none" }}
+                      onChange={(e) =>
+                        handleFileChange(doc.id, e.target.files?.[0] ?? null)
+                      }
+                    />
+                    <Button
+                      component="label"
+                      htmlFor={inputId}
+                      fullWidth
+                      color={
+                        uploadStatus[doc.id] === "success" ? "green" : "gray"
+                      }
+                    >
+                      {uploadStatus[doc.id] === "success"
+                        ? "Uploaded"
+                        : `Choose ${doc.name}`}
+                    </Button>
+                  </Grid.Col>
+                );
+              })}
+            </Grid>
+            <Group justify="flex-end" mt="xl">
+              <Button variant="default" onClick={() => setStep(1)}>
+                Back
+              </Button>
+              <Button color="blue" onClick={handleSubmit}>
+                Submit All Documents
+              </Button>
+            </Group>
+          </>
+        )}
+      </Paper>
     </Container>
   );
 }

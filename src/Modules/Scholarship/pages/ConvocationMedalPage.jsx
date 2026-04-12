@@ -60,7 +60,7 @@ function ConvocationMedalPage() {
               Please click on the PROCEED button below to fill the form.
             </Text>
 
-            <Group position="right" mt="lg">
+            <Group justify="flex-end" mt="lg">
               <Button
                 onClick={() => setNext(true)}
                 color="blue"

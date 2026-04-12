@@ -15,7 +15,7 @@ import { validateGrandTotal } from "../../utils/helpers";
 
 export default function DirectorSilverForm() {
   const [formData, setFormData] = useState({
-    award_type: "Director's Silver Medal",
+    award_type: "Director's Silver",
     Marksheet: null,
     justification: "",
     correspondence_address: "",

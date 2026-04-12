@@ -22,20 +22,40 @@ function PreviousWinnersConvenor() {
   const [winners, setWinners] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showTable, setShowTable] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFetchError(null);
+    if (!programme || !academicYear || !award) {
+      setFetchError("Please select programme, academic year, and award.");
+      setShowTable(true);
+      setWinners([]);
+      return;
+    }
+    const awardId = AWARD_MAPPING[award];
+    if (awardId == null) {
+      setFetchError("Unknown award mapping.");
+      setShowTable(true);
+      setWinners([]);
+      return;
+    }
     setIsLoading(true);
     setShowTable(true);
     try {
       const data = await fetchPreviousWinners(
         programme,
         parseInt(academicYear, 10),
-        AWARD_MAPPING[award],
+        awardId,
       );
       setWinners(normaliseWinnersResponse(data));
     } catch (fetchErr) {
       setWinners([]);
+      const msg =
+        (fetchErr && fetchErr.message) ||
+        String(fetchErr) ||
+        "Failed to load winners.";
+      setFetchError(msg);
       console.error("Error fetching winners:", fetchErr);
     } finally {
       setIsLoading(false);
@@ -144,10 +164,16 @@ function PreviousWinnersConvenor() {
         <div className={styles.winnersList}>
           {isLoading ? (
             <Loader size="lg" />
+          ) : fetchError ? (
+            <Text c="red" size="sm">
+              {fetchError}
+            </Text>
           ) : winners.length > 0 ? (
             <MantineReactTable table={table} />
           ) : (
-            <Text>No winners found</Text>
+            <Text c="dimmed">
+              No winners found for this programme, year, and award.
+            </Text>
           )}
         </div>
       )}
