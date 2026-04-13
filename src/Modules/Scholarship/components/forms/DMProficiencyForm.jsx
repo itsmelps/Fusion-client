@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
-/* eslint-disable react/jsx-props-no-spreading */
-import React from "react";
+/* eslint-disable react/jsx-props-no-spreading, no-use-before-define */
+import React, { useEffect, useState } from "react";
 import {
   Button,
   TextInput,
@@ -11,11 +11,28 @@ import {
   Paper,
   Title,
   NumberInput,
+  Alert,
+  Notification,
+  Loader,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { submitPDM } from "../../services/api";
+import { IconAlertCircle, IconCheck } from "@tabler/icons-react";
+import {
+  submitPdmRoute,
+  getDraftRoute,
+  saveDraftRoute,
+  deleteDraftRoute,
+  showPdmStatusRoute,
+} from "../../../../routes/SPACSRoutes";
+
+const AWARD_TYPE = "dm";
 
 export default function DMProficiencyForm() {
+  const [submitting, setSubmitting] = useState(false);
+  const [draftLoading, setDraftLoading] = useState(true);
+  const [duplicateWarning, setDuplicateWarning] = useState(false);
+  const [notification, setNotification] = useState(null);
+
   const form = useForm({
     initialValues: {
       award_type: "D&M Proficiency Gold Medal",
@@ -71,157 +88,268 @@ export default function DMProficiencyForm() {
     },
   });
 
+  // BR-SPACS-007: Load draft on mount
+  useEffect(() => {
+    const loadDraftAndCheckEligibility = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+
+        // Load draft
+        const draftRes = await fetch(
+          `${getDraftRoute}?award_type=${AWARD_TYPE}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Token ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+        if (draftRes.ok) {
+          const draftData = await draftRes.json();
+          if (draftData && draftData.draft_data) {
+            form.setValues(draftData.draft_data);
+          }
+        }
+
+        // Check eligibility
+        const statusRes = await fetch(showPdmStatusRoute, {
+          method: "POST",
+          headers: {
+            Authorization: `Token ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (Array.isArray(statusData) && statusData.length > 0) {
+            const completeApp = statusData.find(
+              (app) => app.status === "Complete",
+            );
+            if (completeApp) {
+              setDuplicateWarning(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error loading draft or checking status:", err);
+      } finally {
+        setDraftLoading(false);
+      }
+    };
+
+    loadDraftAndCheckEligibility();
+  }, []);
+
+  // BR-SPACS-007: Auto-save every 60 seconds
+  useEffect(() => {
+    const autoSaveInterval = setInterval(() => {
+      saveDraftToBackend();
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [form.values]);
+
+  const saveDraftToBackend = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      await fetch(saveDraftRoute, {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          award_type: AWARD_TYPE,
+          draft_data: {
+            ...form.values,
+            Marksheet: null, // Don't save file object
+          },
+        }),
+      });
+    } catch (err) {
+      console.error("Draft auto-save failed:", err);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(saveDraftRoute, {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          award_type: AWARD_TYPE,
+          draft_data: {
+            ...form.values,
+            Marksheet: null,
+          },
+        }),
+      });
+      if (res.ok) {
+        setNotification({
+          title: "Success",
+          message: "Draft saved successfully!",
+          color: "green",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setNotification({
+        title: "Error",
+        message: "Failed to save draft.",
+        color: "red",
+      });
+    }
+  };
+
   const marksheetInputId = "dm-proficiency-marksheet-input";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const confirmed = window.confirm(
-      "Are you sure you want to submit the form?",
-    );
-    if (!confirmed) return;
     if (!form.values.Marksheet) {
-      alert("Marksheet is required. Please upload a file.");
+      setNotification({
+        title: "Error",
+        message: "Marksheet is required. Please upload a file.",
+        color: "red",
+      });
       return;
     }
-    if (!form.validate().hasErrors) {
-      const formDataToSend = new FormData();
-      Object.entries(form.values).forEach(([key, value]) => {
-        if (value) formDataToSend.append(key, value);
+    if (form.validate().hasErrors) {
+      setNotification({
+        title: "Error",
+        message: "Please fix the form errors.",
+        color: "red",
       });
-      try {
-        await submitPDM(formDataToSend);
-        alert("Form submitted successfully!");
-      } catch (submitErr) {
-        console.error("Error submitting form:", submitErr);
-        alert(`An error occurred: ${submitErr.message}`);
+      return;
+    }
+
+    setSubmitting(true);
+    const formDataToSend = new FormData();
+    Object.entries(form.values).forEach(([key, value]) => {
+      if (value) formDataToSend.append(key, value);
+    });
+
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(submitPdmRoute, {
+        method: "POST",
+        body: formDataToSend,
+        headers: { Authorization: `Token ${token}` },
+      });
+
+      if (res.ok) {
+        // BR-SPACS-007: Delete draft on successful submit
+        await fetch(`${deleteDraftRoute}?award_type=${AWARD_TYPE}`, {
+          method: "DELETE",
+          headers: { Authorization: `Token ${token}` },
+        });
+        setNotification({
+          title: "Success",
+          message: "Form submitted successfully!",
+          color: "green",
+        });
+      } else {
+        const data = await res.json();
+        setNotification({
+          title: "Error",
+          message: data.detail || "Failed to submit the form",
+          color: "red",
+        });
       }
+    } catch (err) {
+      console.error("Error submitting form:", err);
+      setNotification({
+        title: "Error",
+        message: "Network error. Please try again.",
+        color: "red",
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <Container size="lg">
-      <Paper radius="md" p="sm">
-        <Title order={2} mb="lg">
-          DM Proficiency Form
-        </Title>
-        <form onSubmit={handleSubmit}>
-          <Grid gutter="lg">
-            {["justification", "correspondence_address"].map((field) => (
-              <Grid.Col span={12} key={field}>
-                <Textarea
-                  label={field.replace(/_/g, " ")}
-                  placeholder={`Enter ${field.replace(/_/g, " ")}`}
-                  minRows={3}
-                  {...form.getInputProps(field)}
-                  required
-                  maxLength={500}
-                  description="Maximum 500 characters"
-                  descriptionProps={{ color: "dimmed" }}
-                />
-              </Grid.Col>
-            ))}
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <TextInput
-                label="Nearest Police Station"
-                placeholder="Enter Nearest Police Station"
-                {...form.getInputProps("nearest_policestation")}
-                required
-                maxLength={500}
-                description="Maximum 500 characters"
-                descriptionProps={{ color: "dimmed" }}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <TextInput
-                label="Nearest Railway Station"
-                placeholder="Enter Nearest Railway Station"
-                {...form.getInputProps("nearest_railwaystation")}
-                required
-                maxLength={500}
-                description="Maximum 500 characters"
-                descriptionProps={{ color: "dimmed" }}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <TextInput
-                label="Financial Assistance"
-                placeholder="Enter Financial Assistance"
-                {...form.getInputProps("financial_assistance")}
-                required
-                maxLength={500}
-                description="Maximum 500 characters"
-                descriptionProps={{ color: "dimmed" }}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <NumberInput
-                label="Grand Total"
-                placeholder="Enter Grand Total"
-                value={form.values.grand_total}
-                onChange={(value) => {
-                  form.setFieldValue("grand_total", value);
-                  form.validateField("grand_total");
-                }}
-                error={form.errors.grand_total}
-                required
-                description="Maximum 500 characters"
-                descriptionProps={{ color: "dimmed" }}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <TextInput
-                label="Title Name"
-                placeholder="Enter Title Name"
-                {...form.getInputProps("title_name")}
-                required
-                maxLength={500}
-                description="Maximum 500 characters"
-                descriptionProps={{ color: "dimmed" }}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <NumberInput
-                label="Number of Students"
-                placeholder="Enter Number of Students"
-                value={form.values.no_of_students}
-                onChange={(value) => {
-                  form.setFieldValue("no_of_students", value);
-                  form.validateField("no_of_students");
-                }}
-                error={form.errors.no_of_students}
-                required
-              />
-            </Grid.Col>
-            {[1, 2, 3, 4, 5].map((num) => (
-              <Grid.Col span={{ base: 12, sm: 6 }} key={`roll_no${num}`}>
-                <TextInput
-                  label={`Roll No ${num}`}
-                  placeholder={`Enter Roll No ${num}`}
-                  {...form.getInputProps(`roll_no${num}`)}
-                  required
-                  maxLength={10}
-                />
-              </Grid.Col>
-            ))}
-            <Grid.Col span={12}>
-              <Textarea
-                label="Brief Description"
-                placeholder="Enter a brief description"
-                minRows={4}
-                {...form.getInputProps("brief_description")}
-                required
-                maxLength={500}
-                description="Maximum 500 characters"
-                descriptionProps={{ color: "dimmed" }}
-              />
-            </Grid.Col>
-            {["cse", "ece", "mech", "design"].map((field) => (
-              <React.Fragment key={field}>
+      {draftLoading ? (
+        <Loader />
+      ) : (
+        <>
+          {duplicateWarning && (
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              color="orange"
+              mb="md"
+              title="Existing Application Found"
+            >
+              You already have an active application for D&M Proficiency Gold
+              Medal in this academic cycle. You cannot submit another
+              application.
+            </Alert>
+          )}
+
+          {notification && (
+            <Notification
+              icon={<IconCheck size={18} />}
+              color={notification.color}
+              onClose={() => setNotification(null)}
+              title={notification.title}
+              mb="md"
+            >
+              {notification.message}
+            </Notification>
+          )}
+
+          <Paper radius="md" p="sm">
+            <Title order={2} mb="lg">
+              DM Proficiency Form
+            </Title>
+            <form onSubmit={handleSubmit}>
+              <Grid gutter="lg">
+                {["justification", "correspondence_address"].map((field) => (
+                  <Grid.Col span={12} key={field}>
+                    <Textarea
+                      label={field.replace(/_/g, " ")}
+                      placeholder={`Enter ${field.replace(/_/g, " ")}`}
+                      minRows={3}
+                      {...form.getInputProps(field)}
+                      required
+                      maxLength={500}
+                      description="Maximum 500 characters"
+                      descriptionProps={{ color: "dimmed" }}
+                    />
+                  </Grid.Col>
+                ))}
                 <Grid.Col span={{ base: 12, sm: 6 }}>
                   <TextInput
-                    label={`${field.toUpperCase()} Topic`}
-                    placeholder={`Enter ${field.toUpperCase()} Topic`}
-                    {...form.getInputProps(`${field}_topic`)}
+                    label="Nearest Police Station"
+                    placeholder="Enter Nearest Police Station"
+                    {...form.getInputProps("nearest_policestation")}
+                    required
+                    maxLength={500}
+                    description="Maximum 500 characters"
+                    descriptionProps={{ color: "dimmed" }}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <TextInput
+                    label="Nearest Railway Station"
+                    placeholder="Enter Nearest Railway Station"
+                    {...form.getInputProps("nearest_railwaystation")}
+                    required
+                    maxLength={500}
+                    description="Maximum 500 characters"
+                    descriptionProps={{ color: "dimmed" }}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <TextInput
+                    label="Financial Assistance"
+                    placeholder="Enter Financial Assistance"
+                    {...form.getInputProps("financial_assistance")}
                     required
                     maxLength={500}
                     description="Maximum 500 characters"
@@ -230,49 +358,141 @@ export default function DMProficiencyForm() {
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, sm: 6 }}>
                   <NumberInput
-                    label={`${field.toUpperCase()} Percentage`}
-                    placeholder={`Enter ${field.toUpperCase()} Percentage`}
-                    value={form.values[`${field}_percentage`]}
+                    label="Grand Total"
+                    placeholder="Enter Grand Total"
+                    value={form.values.grand_total}
                     onChange={(value) => {
-                      form.setFieldValue(`${field}_percentage`, value);
-                      form.validateField(`${field}_percentage`);
+                      form.setFieldValue("grand_total", value);
+                      form.validateField("grand_total");
                     }}
-                    error={form.errors[`${field}_percentage`]}
+                    error={form.errors.grand_total}
+                    required
+                    description="Maximum 500 characters"
+                    descriptionProps={{ color: "dimmed" }}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <TextInput
+                    label="Title Name"
+                    placeholder="Enter Title Name"
+                    {...form.getInputProps("title_name")}
+                    required
+                    maxLength={500}
+                    description="Maximum 500 characters"
+                    descriptionProps={{ color: "dimmed" }}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <NumberInput
+                    label="Number of Students"
+                    placeholder="Enter Number of Students"
+                    value={form.values.no_of_students}
+                    onChange={(value) => {
+                      form.setFieldValue("no_of_students", value);
+                      form.validateField("no_of_students");
+                    }}
+                    error={form.errors.no_of_students}
                     required
                   />
                 </Grid.Col>
-              </React.Fragment>
-            ))}
-            <Grid.Col span={12}>
-              <input
-                id={marksheetInputId}
-                type="file"
-                accept="application/pdf"
-                style={{ display: "none" }}
-                onChange={(e) =>
-                  form.setFieldValue("Marksheet", e.target.files?.[0] ?? null)
-                }
-              />
-              <Button fullWidth component="label" htmlFor={marksheetInputId}>
-                Upload Marksheet (PDF)
-              </Button>
-              {form.values.Marksheet?.name && (
-                <TextInput
-                  value={form.values.Marksheet.name}
-                  readOnly
-                  mt="sm"
-                  label="Uploaded File"
-                />
-              )}
-            </Grid.Col>
-          </Grid>
-          <Group position="right" mt="xl">
-            <Button type="submit" color="blue">
-              Submit
-            </Button>
-          </Group>
-        </form>
-      </Paper>
+                {[1, 2, 3, 4, 5].map((num) => (
+                  <Grid.Col span={{ base: 12, sm: 6 }} key={`roll_no${num}`}>
+                    <TextInput
+                      label={`Roll No ${num}`}
+                      placeholder={`Enter Roll No ${num}`}
+                      {...form.getInputProps(`roll_no${num}`)}
+                      required
+                      maxLength={10}
+                    />
+                  </Grid.Col>
+                ))}
+                <Grid.Col span={12}>
+                  <Textarea
+                    label="Brief Description"
+                    placeholder="Enter a brief description"
+                    minRows={4}
+                    {...form.getInputProps("brief_description")}
+                    required
+                    maxLength={500}
+                    description="Maximum 500 characters"
+                    descriptionProps={{ color: "dimmed" }}
+                  />
+                </Grid.Col>
+                {["cse", "ece", "mech", "design"].map((field) => (
+                  <React.Fragment key={field}>
+                    <Grid.Col span={{ base: 12, sm: 6 }}>
+                      <TextInput
+                        label={`${field.toUpperCase()} Topic`}
+                        placeholder={`Enter ${field.toUpperCase()} Topic`}
+                        {...form.getInputProps(`${field}_topic`)}
+                        required
+                        maxLength={500}
+                        description="Maximum 500 characters"
+                        descriptionProps={{ color: "dimmed" }}
+                      />
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, sm: 6 }}>
+                      <NumberInput
+                        label={`${field.toUpperCase()} Percentage`}
+                        placeholder={`Enter ${field.toUpperCase()} Percentage`}
+                        value={form.values[`${field}_percentage`]}
+                        onChange={(value) => {
+                          form.setFieldValue(`${field}_percentage`, value);
+                          form.validateField(`${field}_percentage`);
+                        }}
+                        error={form.errors[`${field}_percentage`]}
+                        required
+                      />
+                    </Grid.Col>
+                  </React.Fragment>
+                ))}
+                <Grid.Col span={12}>
+                  <input
+                    id={marksheetInputId}
+                    type="file"
+                    accept="application/pdf"
+                    style={{ display: "none" }}
+                    onChange={(e) =>
+                      form.setFieldValue(
+                        "Marksheet",
+                        e.target.files?.[0] ?? null,
+                      )
+                    }
+                  />
+                  <Button
+                    fullWidth
+                    component="label"
+                    htmlFor={marksheetInputId}
+                  >
+                    Upload Marksheet (PDF)
+                  </Button>
+                  {form.values.Marksheet?.name && (
+                    <TextInput
+                      value={form.values.Marksheet.name}
+                      readOnly
+                      mt="sm"
+                      label="Uploaded File"
+                    />
+                  )}
+                </Grid.Col>
+              </Grid>
+              <Group position="apart" mt="xl">
+                <Button variant="outline" onClick={handleSaveDraft}>
+                  Save Draft
+                </Button>
+                <Button
+                  type="submit"
+                  color="blue"
+                  loading={submitting}
+                  disabled={duplicateWarning}
+                >
+                  Submit
+                </Button>
+              </Group>
+            </form>
+          </Paper>
+        </>
+      )}
     </Container>
   );
 }

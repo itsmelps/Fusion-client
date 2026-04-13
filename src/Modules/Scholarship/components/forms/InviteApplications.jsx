@@ -1,143 +1,191 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
+/* eslint-disable react/jsx-props-no-spreading, no-unused-vars */
 import React, { useState } from "react";
-import styles from "../../styles/inviteApplications.module.css";
-import { inviteApplications } from "../../services/api";
+import {
+  Paper,
+  Title,
+  Select,
+  TextInput,
+  Textarea,
+  Button,
+  Group,
+  Alert,
+  Grid,
+} from "@mantine/core";
+import { useForm } from "@mantine/form";
+import { IconAlertCircle, IconCircleCheck } from "@tabler/icons-react";
+import { inviteApplicationsRoute } from "../../../../routes/SPACSRoutes";
 
 function InviteApplications() {
-  const [formData, setFormData] = useState({
-    award: "",
-    programme: "",
-    batch: "",
-    startdate: "",
-    enddate: "",
-    remarks: "",
-  });
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const today = new Date().toLocaleDateString("en-CA");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const form = useForm({
+    initialValues: {
+      award: "",
+      programme: "",
+      batch: "",
+      startdate: "",
+      enddate: "",
+      remarks: "",
+    },
+    validate: {
+      award: (v) => (!v ? "Please select an award type" : null),
+      programme: (v) => (!v ? "Please select programme" : null),
+      startdate: (v) => (!v ? "Start date is required" : null),
+      enddate: (v, values) => {
+        if (!v) return "End date is required";
+        if (values.startdate && v <= values.startdate)
+          return "End date must be after start date";
+        return null;
+      },
+    },
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (values) => {
     const confirmed = window.confirm(
-      "Are you sure you want to submit the form?",
+      `Open application window for "${values.award}" from ${values.startdate} to ${values.enddate}?`,
     );
     if (!confirmed) return;
+
+    setSubmitting(true);
     try {
-      await inviteApplications(formData);
-      alert("Application submitted successfully!");
-    } catch (submitErr) {
-      console.error("Error submitting form:", submitErr);
-      alert("Failed to submit the application. Please try again.");
+      const token = localStorage.getItem("authToken");
+      const response = await fetch(inviteApplicationsRoute, {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+      if (response.ok) {
+        setSuccess(true);
+        form.reset();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.detail || "Failed to open application window.");
+      }
+    } catch (error) {
+      console.error("Network error:", error);
+      alert("Network error. Please check your connection.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>Invite Applications</div>
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Type *</label>
-          <select
-            className={styles.input}
-            name="award"
-            value={formData.award}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select Type</option>
-            <option value="MCM Scholarship">MCM Scholarship</option>
-            <option value="Director's Silver Medal">
-              Director&apos;s Silver Medal
-            </option>
-            <option value="Director's Gold Medal">
-              Director&apos;s Gold Medal
-            </option>
-            <option value="D&M Proficiency Gold Medal">
-              D&amp;M Proficiency Gold Medal
-            </option>
-            <option value="Notional Prizes">Notional Prizes</option>
-          </select>
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Programme *</label>
-          <select
-            className={styles.input}
-            name="programme"
-            value={formData.programme}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select Programme</option>
-            <option value="BTech">BTech</option>
-            <option value="MTech">MTech</option>
-            <option value="MDes">MDes</option>
-            <option value="PhD">PhD</option>
-          </select>
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Batch *</label>
-          <select
-            className={styles.input}
-            name="batch"
-            value={formData.batch}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select Batch</option>
-            {[2018, 2019, 2020, 2021, 2022, 2023, 2024].map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className={styles.dateRow}>
-          <div className={styles.formGroup}>
-            <label className={styles.label}>Start Date *</label>
-            <input
+    <Paper radius="md" p="xl" withBorder mt="md">
+      <Title order={3} mb="lg">
+        Open Application Window
+      </Title>
+
+      {success && (
+        <Alert
+          icon={<IconCircleCheck size={16} />}
+          color="green"
+          mb="md"
+          title="Success"
+          withCloseButton
+          onClose={() => setSuccess(false)}
+        >
+          Application window has been opened and notifications sent to eligible
+          students.
+        </Alert>
+      )}
+
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Grid>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <Select
+              label="Award / Scholarship Type *"
+              placeholder="Select type"
+              data={[
+                { value: "MCM Scholarship", label: "MCM Scholarship" },
+                {
+                  value: "Director's Silver Medal",
+                  label: "Director's Silver Medal",
+                },
+                {
+                  value: "Director's Gold Medal",
+                  label: "Director's Gold Medal",
+                },
+                {
+                  value: "D&M Proficiency Gold Medal",
+                  label: "D&M Proficiency Gold Medal",
+                },
+              ]}
+              {...form.getInputProps("award")}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <Select
+              label="Programme *"
+              placeholder="Select programme"
+              data={[
+                { value: "B.Tech", label: "B.Tech" },
+                { value: "M.Tech", label: "M.Tech" },
+                { value: "PhD", label: "PhD" },
+                { value: "All", label: "All Programmes" },
+              ]}
+              {...form.getInputProps("programme")}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <Select
+              label="Batch"
+              placeholder="Select batch (or leave for all)"
+              clearable
+              data={[
+                { value: "UG1", label: "UG1" },
+                { value: "UG2", label: "UG2" },
+                { value: "UG3", label: "UG3" },
+                { value: "UG4", label: "UG4" },
+                { value: "PG1", label: "PG1" },
+                { value: "PG2", label: "PG2" },
+                { value: "all", label: "All Batches" },
+              ]}
+              {...form.getInputProps("batch")}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 3 }}>
+            <TextInput
               type="date"
-              className={styles.input}
-              name="startdate"
-              value={formData.startdate}
-              onChange={handleChange}
+              label="Start Date *"
               min={today}
-              required
+              {...form.getInputProps("startdate")}
             />
-          </div>
-          <div className={styles.formGroup}>
-            <label className={styles.label}>End Date *</label>
-            <input
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 3 }}>
+            <TextInput
               type="date"
-              className={styles.input}
-              name="enddate"
-              value={formData.enddate}
-              onChange={handleChange}
-              min={formData.startdate || today}
-              required
+              label="End Date *"
+              min={form.values.startdate || today}
+              {...form.getInputProps("enddate")}
             />
-          </div>
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Remarks *</label>
-          <textarea
-            className={styles.textarea}
-            name="remarks"
-            value={formData.remarks}
-            onChange={handleChange}
-            rows={4}
-            placeholder="Enter your remarks..."
-            required
-          />
-        </div>
-        <button type="submit" className={styles.submitButton}>
-          Submit
-        </button>
+          </Grid.Col>
+          <Grid.Col span={12}>
+            <Textarea
+              label="Remarks / Additional Instructions"
+              placeholder="Any special instructions for applicants..."
+              minRows={3}
+              maxLength={500}
+              {...form.getInputProps("remarks")}
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Group position="right" mt="xl">
+          <Button variant="default" onClick={() => form.reset()}>
+            Reset
+          </Button>
+          <Button type="submit" color="blue" loading={submitting}>
+            Open Application Window
+          </Button>
+        </Group>
       </form>
-    </div>
+    </Paper>
   );
 }
 

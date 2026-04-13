@@ -22,3 +22,28 @@ export const inviteApplicationsRoute = `${host}/spacs/release`;
 export const submitMCMApplicationsRoute = `${host}/spacs/mcm_update/`;
 export const scholarshipNotification = `${host}/notifications/api/scholarship_portal_notification/`;
 export const checkApplicationWindow = `${host}/spacs/check-application-window/`;
+
+// T3: Withdrawal
+export const withdrawApplicationRoute = `${host}/spacs/withdraw/`;
+
+// T4: Withdrawal acknowledgement
+export const listWithdrawalsRoute = `${host}/spacs/withdrawals/`;
+export const acknowledgeWithdrawalRoute = `${host}/spacs/withdrawals/acknowledge/`;
+
+// T5: PDF download
+export const downloadApplicationRoute = `${host}/spacs/download-application/`;
+
+// T6: Forward to convener
+export const forwardApplicationRoute = `${host}/spacs/forward-application/`;
+
+// T7: Draft auto-save
+export const saveDraftRoute = `${host}/spacs/draft/save/`;
+export const getDraftRoute = `${host}/spacs/draft/get/`;
+export const deleteDraftRoute = `${host}/spacs/draft/delete/`;
+
+// T8: Catalog versioning
+export const createNewAwardRoute = `${host}/spacs/create-award-new/`;
+export const retireAwardRoute = `${host}/spacs/retire-award/`;
+
+// T10: Document reuse
+export const listStudentDocumentsRoute = `${host}/spacs/my-documents/`;

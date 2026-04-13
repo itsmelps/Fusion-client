@@ -1,52 +1,30 @@
 .wrapper {
-  font-family: Arial, sans-serif;
-  max-width: 100%;
-  padding: 20px;
+  padding: 1rem 0;
 }
 
-.title {
-  font-size: 18px;
-  font-weight: normal;
-  margin-bottom: 10px;
-}
-
-.underline1 {
-  height: 2px;
-  background-color: #17abff;
-  margin-bottom: 20px;
-}
-
-.underline {
-  height: 1px;
-  margin-bottom: 10px;
+.formContainer {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .scholarshipName {
-  font-size: 14px;
-  font-weight: bold;
+  color: #1c7ed6;
+  margin-bottom: 0.75rem;
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+.checkStatusButton {
+  background-color: #1971c2;
+  color: white;
+  border-radius: 6px;
+  padding: 0.5rem 1.25rem;
 }
 
-.radioGroup {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 5px;
+.checkStatusButton:hover {
+  background-color: #1864ab;
 }
-
-.radioLabel {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-/* .inputContainer {
-  
-} */
 
 .select,
 .inputField {

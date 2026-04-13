@@ -4,7 +4,7 @@ import { useState } from "react";
 import stylesDashboard from "../../../Dashboard/Dashboard.module.css";
 import ConvenorPage from "../../pages/ConvenorPage";
 import InviteApplications from "../forms/InviteApplications";
-import MCMApplications from "../tables/MCMApplications";
+import MCMApplications from "../tables/MCM_Applications";
 
 function ConvenorBreadcrumbs() {
   const [activeTab, setActiveTab] = useState("catalog");
