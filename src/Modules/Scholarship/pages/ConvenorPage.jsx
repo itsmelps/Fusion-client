@@ -2,12 +2,12 @@
 import React, { useState, useRef } from "react";
 import { Tabs, Button, Flex, Text } from "@mantine/core";
 import { CaretCircleLeft, CaretCircleRight } from "@phosphor-icons/react";
-import CustomBreadcrumbs from "../../../../components/Breadcrumbs";
+import CustomBreadcrumbs from "../../../components/Breadcrumbs";
 import classes from "../../Dashboard/Dashboard.module.css";
 import AwardsAndScholarshipCatalog from "../components/tables/AwardsAndScholarshipCatalogC";
 import SpacsMembers from "../components/tables/spacsMembersC";
 import PreviousWinners from "../components/tables/previousWinnerC";
-import MCMApplications from "../components/tables/MCM_Applications";
+import ConvenerApplications from "../convenor/components/ConvenerApplications";
 import InviteApplications from "../components/forms/InviteApplications";
 
 function ConvenorPage() {
@@ -90,7 +90,7 @@ function ConvenorPage() {
           </Tabs.Panel>
 
           <Tabs.Panel value="applications" className={classes.tabPanel}>
-            <MCMApplications />
+            <ConvenerApplications />
           </Tabs.Panel>
 
           <Tabs.Panel value="invite" className={classes.tabPanel}>

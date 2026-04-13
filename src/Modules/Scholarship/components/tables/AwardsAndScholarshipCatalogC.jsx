@@ -17,7 +17,7 @@ import {
   Grid,
   Alert,
 } from "@mantine/core";
-import { Pencil, Trash, Share2 } from "@phosphor-icons/react";
+import { Pencil, Trash } from "@phosphor-icons/react";
 import { IconAlertCircle } from "@tabler/icons-react";
 import styles from "../../styles/CatalogC.module.css";
 import {
