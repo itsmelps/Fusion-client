@@ -1,6 +1,5 @@
 import { MantineProvider, createTheme } from "@mantine/core";
 import { Suspense, lazy } from "react";
-import { useSelector } from "react-redux";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import {
@@ -17,7 +16,7 @@ import InventoryIndex from "./Modules/Inventory/components/InventoryIndex";
 import PurchaseRoutes from "./Modules/Purchase/PurchaseRoute.jsx";
 import PatentRoutes from "./Modules/Patent/routes/PatentRoutes";
 
-import UserBreadcrumbs from "./Modules/Scholarship/components/common/UserBreadcumbs";
+import ScholarshipShell from "./Modules/Scholarship/components/common/ScholarshipShell";
 import OtherAcadProcedures from "./Modules/Otheracademic/OtherAcademicProcedures";
 import PendingReqs from "./Modules/Visitors_Hostel/pendingRequests.jsx";
 import { DesignationsProvider } from "./Modules/Iwd/helper/designationContext";
@@ -35,9 +34,6 @@ const ApplicationStatusTimeline = lazy(
 );
 
 const HealthCenter = lazy(() => import("./Modules/Health Center"));
-const ConvenorBreadcumbs = lazy(
-  () => import("./Modules/Scholarship/components/common/ConvenorBreadcumbs"),
-);
 const HostelPage = lazy(() => import("./Modules/Hostel-Management/index"));
 const IwdModule = lazy(() => import("./Modules/Iwd/index"));
 const IwdWorkPage = lazy(
@@ -120,7 +116,6 @@ function ProfileRouteWithUsername() {
 }
 export default function App() {
   const location = useLocation();
-  const role = useSelector((state) => state.user.role);
   return (
     <MantineProvider theme={theme}>
       <Notifications position="top-center" autoClose={2000} limit={1} />
@@ -511,14 +506,7 @@ export default function App() {
           element={
             <Layout>
               <Suspense fallback={<div>Loading .... </div>}>
-                {(role === "spacsconvenor" || role === "spacsassistant") && (
-                  <ConvenorBreadcumbs />
-                )}
-                {role === "student" && <UserBreadcrumbs />}
-                {import.meta.env.DEV &&
-                  role !== "spacsconvenor" &&
-                  role !== "spacsassistant" &&
-                  role !== "student" && <UserBreadcrumbs />}
+                <ScholarshipShell />
               </Suspense>
             </Layout>
           }

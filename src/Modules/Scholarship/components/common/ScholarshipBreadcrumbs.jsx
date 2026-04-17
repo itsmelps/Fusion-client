@@ -1,30 +1,26 @@
 /* eslint-disable react/prop-types */
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Breadcrumbs as MantineBreadcrumbs, Anchor } from "@mantine/core";
+import { Breadcrumbs as MantineBreadcrumbs, Text } from "@mantine/core";
 import { CaretRight } from "@phosphor-icons/react";
-import classes from "./ScholarshipBreadcrumbs.module.css";
 
 function ScholarshipBreadcrumbs({ items }) {
-  const navigate = useNavigate();
-
-  const handleClick = (path) => {
-    navigate(path);
-  };
-
   return (
     <MantineBreadcrumbs
-      className={classes.MantineBreadcrumbs}
-      separator={<CaretRight size={16} />}
+      separator={<CaretRight size={14} weight="bold" color="#666" />}
+      mb="md"
     >
+      <Text size="sm" fw={600} color="#666">
+        Scholarship Portal
+      </Text>
       {items.map((item, index) => (
-        <Anchor
+        <Text
           key={index}
-          onClick={() => handleClick(item.path)}
-          className={classes.breadcrumbItem}
+          size="sm"
+          fw={600}
+          color={index === items.length - 1 ? "#333" : "#666"}
         >
           {item.title}
-        </Anchor>
+        </Text>
       ))}
     </MantineBreadcrumbs>
   );

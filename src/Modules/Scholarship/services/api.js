@@ -32,6 +32,7 @@ import {
   showPdmStatusRoute,
   inviteApplicationsRoute,
 } from "../../../routes/SPACSRoutes";
+import { host } from "../../../routes/globalRoutes";
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
 
@@ -95,10 +96,10 @@ export const fetchMCMApplications = async () => {
   return response.json();
 };
 
-export const updateMCMStatus = async (id, status) => {
+export const updateMCMStatus = async (id, action, note = "") => {
   const res = await axios.post(
     updateMCMStatusRoute,
-    { id, status },
+    { id, action, note },
     { headers: getAuthHeaders() },
   );
   return res.data;
@@ -136,10 +137,10 @@ export const fetchSilverApplications = async () => {
   return data;
 };
 
-export const updateSilverStatus = async (id, status) => {
+export const updateSilverStatus = async (id, action, note = "") => {
   const res = await axios.post(
     updateDirectorSilverStatusRoute,
-    { id, status },
+    { id, action, note },
     { headers: getAuthHeaders() },
   );
   return res.data;
@@ -177,10 +178,10 @@ export const fetchGoldApplications = async () => {
   return data;
 };
 
-export const updateGoldStatus = async (id, action) => {
+export const updateGoldStatus = async (id, action, note = "") => {
   const res = await axios.post(
     updateDirectorGoldStatusRoute,
-    { id, action },
+    { id, action, note },
     { headers: getAuthHeaders() },
   );
   return res.data;
@@ -218,10 +219,10 @@ export const fetchPDMApplications = async () => {
   return data;
 };
 
-export const updatePDMStatus = async (id, status) => {
+export const updatePDMStatus = async (id, action, note = "") => {
   const res = await axios.post(
     updateProficiencyDMStatusRoute,
-    { id, status },
+    { id, action, note },
     { headers: getAuthHeaders() },
   );
   return res.data;
@@ -290,4 +291,26 @@ export const inviteApplications = async (formData) => {
     throw new Error(err.detail || "Failed to submit invitation");
   }
   return response.json();
+};
+
+// ── Application Notes ────────────────────────────────────────────────────────
+
+export const fetchApplicationNotes = async (
+  scholarship_type,
+  application_id,
+) => {
+  const { data } = await axios.get(`${host}/spacs/application-notes/`, {
+    params: { scholarship_type, application_id },
+    headers: getAuthHeaders(),
+  });
+  return data;
+};
+
+export const manageApplicationNote = async (note_id, action) => {
+  const { data } = await axios.post(
+    `${host}/spacs/manage-note/`,
+    { note_id, action },
+    { headers: getJsonHeaders() },
+  );
+  return data;
 };
