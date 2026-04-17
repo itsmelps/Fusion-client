@@ -346,30 +346,31 @@ function ApplicationsTable({ onApply, onEdit }) {
             )}
 
             {/* Assistant Actions */}
-            {isAssistant && rawStatus === "PENDING" && (
-              <>
-                <Tooltip label="Forward to Convenor">
-                  <ActionIcon
-                    variant="subtle"
-                    color="indigo"
-                    size="md"
-                    onClick={() => handleAction(app, "forward")}
-                  >
-                    <CheckCircle size={18} />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Ask Student for Info">
-                  <ActionIcon
-                    variant="subtle"
-                    color="orange"
-                    size="md"
-                    onClick={() => handleAction(app, "ask_info")}
-                  >
-                    <ChatCircleText size={18} />
-                  </ActionIcon>
-                </Tooltip>
-              </>
-            )}
+            {isAssistant &&
+              (rawStatus === "PENDING" || rawStatus === "INCOMPLETE") && (
+                <>
+                  <Tooltip label="Forward to Convenor">
+                    <ActionIcon
+                      variant="subtle"
+                      color="indigo"
+                      size="md"
+                      onClick={() => handleAction(app, "forward")}
+                    >
+                      <CheckCircle size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Tooltip label="Ask Student for Info">
+                    <ActionIcon
+                      variant="subtle"
+                      color="orange"
+                      size="md"
+                      onClick={() => handleAction(app, "ask_info")}
+                    >
+                      <ChatCircleText size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                </>
+              )}
 
             {/* Convenor Actions */}
             {isConvenor && rawStatus === "FORWARDED" && (
