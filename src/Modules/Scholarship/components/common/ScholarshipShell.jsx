@@ -7,14 +7,14 @@ import classes from "../../../Dashboard/Dashboard.module.css";
 // Table components
 import ScholarshipTypesTable from "../tables/ScholarshipTypesTable";
 import ApplicationsTable from "../tables/ApplicationsTable";
+import AwardsTable from "../tables/AwardsTable";
 // Form components
 import ScholarshipForm from "../forms/ScholarshipForm";
-import EditScholarshipForm from "../forms/EditScholarshipForm";
 
 function ScholarshipShell() {
   const [activeTab, setActiveTab] = useState("types");
   const [viewingForm, setViewingForm] = useState(false);
-  const [editingScholarship, setEditingScholarship] = useState(null);
+  const [editingApplication, setEditingApplication] = useState(null);
   const tabsListRef = useRef(null);
 
   const tabItems = [
@@ -34,7 +34,7 @@ function ScholarshipShell() {
     }
     setActiveTab(tabItems[newIndex].key);
     setViewingForm(false);
-    setEditingScholarship(null);
+    setEditingApplication(null);
 
     if (tabsListRef.current) {
       tabsListRef.current.scrollBy({
@@ -44,38 +44,46 @@ function ScholarshipShell() {
     }
   };
 
-  const renderActiveTab = () => {
-    // Student apply form
-    if (viewingForm) {
-      return <ScholarshipForm onCancel={() => setViewingForm(false)} />;
-    }
+  const handleApply = () => {
+    setViewingForm(true);
+    setEditingApplication(null);
+  };
 
-    // Convenor edit scholarship form
-    if (editingScholarship) {
+  const handleEdit = (application) => {
+    setEditingApplication(application);
+    setViewingForm(true);
+  };
+
+  const handleFormCancel = () => {
+    setViewingForm(false);
+    setEditingApplication(null);
+  };
+
+  const handleFormSubmitted = () => {
+    setViewingForm(false);
+    setEditingApplication(null);
+    setActiveTab("applications");
+  };
+
+  const renderActiveTab = () => {
+    // Application form (new or edit)
+    if (viewingForm) {
       return (
-        <EditScholarshipForm
-          scholarship={editingScholarship}
-          onCancel={() => setEditingScholarship(null)}
-          onSaved={() => {
-            setEditingScholarship(null);
-          }}
+        <ScholarshipForm
+          onCancel={handleFormCancel}
+          onSubmitted={handleFormSubmitted}
+          editData={editingApplication}
         />
       );
     }
 
     switch (activeTab) {
       case "types":
-        return (
-          <ScholarshipTypesTable
-            filterType="scholarship"
-            onApply={() => setViewingForm(true)}
-            onEdit={(award) => setEditingScholarship(award)}
-          />
-        );
+        return <ScholarshipTypesTable onApply={handleApply} />;
       case "applications":
-        return <ApplicationsTable onApply={() => setViewingForm(true)} />;
+        return <ApplicationsTable onApply={handleApply} onEdit={handleEdit} />;
       case "awards":
-        return <ScholarshipTypesTable filterType="award" />;
+        return <AwardsTable />;
       case "merit_lists":
         return (
           <Text c="dimmed" ta="center" py="xl">
@@ -117,7 +125,7 @@ function ScholarshipShell() {
             onChange={(val) => {
               setActiveTab(val);
               setViewingForm(false);
-              setEditingScholarship(null);
+              setEditingApplication(null);
             }}
           >
             <Tabs.List style={{ display: "flex", flexWrap: "nowrap" }}>

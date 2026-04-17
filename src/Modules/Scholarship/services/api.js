@@ -31,6 +31,9 @@ import {
   showSilverStatusRoute,
   showPdmStatusRoute,
   inviteApplicationsRoute,
+  withdrawApplicationRoute,
+  downloadApplicationRoute,
+  forwardApplicationRoute,
 } from "../../../routes/SPACSRoutes";
 import { host } from "../../../routes/globalRoutes";
 
@@ -313,4 +316,87 @@ export const manageApplicationNote = async (note_id, action) => {
     { headers: getJsonHeaders() },
   );
   return data;
+};
+
+// ── Withdraw Application (Student) ───────────────────────────────────────────
+
+export const withdrawApplication = async (
+  applicationId,
+  scholarshipType,
+  reason,
+) => {
+  const response = await fetch(withdrawApplicationRoute, {
+    method: "POST",
+    headers: getJsonHeaders(),
+    body: JSON.stringify({
+      application_id: applicationId,
+      scholarship_type: scholarshipType,
+      reason,
+    }),
+  });
+  if (!response.ok) {
+    let errMsg = "Failed to withdraw application";
+    try {
+      const err = await response.json();
+      errMsg = err.detail || err.message || errMsg;
+    } catch {
+      // non-JSON
+    }
+    throw new Error(errMsg);
+  }
+  return response.json();
+};
+
+// ── Download Application PDF ─────────────────────────────────────────────────
+
+export const downloadApplicationPDF = async (
+  applicationId,
+  scholarshipType,
+) => {
+  const token = localStorage.getItem("authToken");
+  const response = await fetch(
+    `${downloadApplicationRoute}?application_id=${applicationId}&scholarship_type=${scholarshipType}`,
+    {
+      method: "GET",
+      headers: { Authorization: `Token ${token}` },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to download application PDF");
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = window.document.createElement("a");
+  a.href = url;
+  a.download = `application_${applicationId}_${scholarshipType}.pdf`;
+  window.document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  a.remove();
+};
+
+// ── Forward Application (Assistant → Convenor) ──────────────────────────────
+
+export const forwardApplication = async (applicationId, scholarshipType) => {
+  const response = await fetch(forwardApplicationRoute, {
+    method: "POST",
+    headers: getJsonHeaders(),
+    body: JSON.stringify({
+      application_id: applicationId,
+      scholarship_type: scholarshipType,
+    }),
+  });
+  if (!response.ok) {
+    let errMsg = "Failed to forward application";
+    try {
+      const err = await response.json();
+      errMsg = err.detail || err.message || errMsg;
+    } catch {
+      // non-JSON
+    }
+    throw new Error(errMsg);
+  }
+  return response.json();
 };

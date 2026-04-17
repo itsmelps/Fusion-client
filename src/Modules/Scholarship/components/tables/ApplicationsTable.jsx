@@ -18,21 +18,24 @@ import { notifications } from "@mantine/notifications";
 import {
   Eye,
   Plus,
+  XCircle,
+  PencilSimple,
+  DownloadSimple,
   ChatCircleText,
   CheckCircle,
-  XCircle,
 } from "@phosphor-icons/react";
 import PropTypes from "prop-types";
 import * as api from "../../services/api";
 
 const STATUS_CONFIG = {
-  PENDING: { color: "yellow.6", label: "PENDING" },
+  PENDING: { color: "orange", label: "PENDING" },
   INCOMPLETE: { color: "gray", label: "INCOMPLETE" },
   FORWARDED: { color: "indigo", label: "FORWARDED" },
   ACCEPT: { color: "green", label: "ACCEPTED" },
   REJECT: { color: "red", label: "REJECTED" },
   ACCEPTED: { color: "green", label: "ACCEPTED" },
   REJECTED: { color: "red", label: "REJECTED" },
+  WITHDRAWN: { color: "gray", label: "WITHDRAWN" },
 };
 
 function StatusBadge({ status }) {
@@ -51,7 +54,7 @@ StatusBadge.propTypes = {
   status: PropTypes.string,
 };
 
-function ApplicationsTable({ onApply }) {
+function ApplicationsTable({ onApply, onEdit }) {
   const role = useSelector((state) => state.user.role);
   const isStudent = role === "student";
   const isAssistant = role === "spacsassistant";
@@ -60,7 +63,21 @@ function ApplicationsTable({ onApply }) {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Workflow Modal state
+  // Withdraw confirmation modal
+  const [withdrawModal, setWithdrawModal] = useState({
+    open: false,
+    app: null,
+  });
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawReason, setWithdrawReason] = useState("");
+
+  // View details modal
+  const [viewModal, setViewModal] = useState({
+    open: false,
+    app: null,
+  });
+
+  // Workflow Modal state (assistant/convenor)
   const [askInfoModal, setAskInfoModal] = useState({
     open: false,
     app: null,
@@ -75,7 +92,6 @@ function ApplicationsTable({ onApply }) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Unified listing for all types
       const mcm = isStudent
         ? await api.fetchMCMStatus()
         : await api.fetchMCMApplications();
@@ -124,20 +140,76 @@ function ApplicationsTable({ onApply }) {
     fetchData();
   }, [role]);
 
+  /* ── Student actions ─────────────────────────────────────────────── */
+
+  const handleWithdraw = async () => {
+    if (!withdrawModal.app) return;
+    if (!withdrawReason.trim()) {
+      notifications.show({
+        title: "Required",
+        message: "Please provide a reason for withdrawal",
+        color: "orange",
+      });
+      return;
+    }
+    setWithdrawing(true);
+    try {
+      await api.withdrawApplication(
+        withdrawModal.app.id,
+        withdrawModal.app.key_type,
+        withdrawReason.trim(),
+      );
+      notifications.show({
+        title: "Success",
+        message: "Application withdrawn successfully",
+        color: "green",
+      });
+      setWithdrawModal({ open: false, app: null });
+      setWithdrawReason("");
+      fetchData();
+    } catch (err) {
+      notifications.show({
+        title: "Error",
+        message: err.message || "Failed to withdraw application",
+        color: "red",
+      });
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
+  const handleDownloadPDF = async (app) => {
+    try {
+      await api.downloadApplicationPDF(app.id, app.key_type);
+      notifications.show({
+        title: "Success",
+        message: "PDF download started",
+        color: "green",
+      });
+    } catch (err) {
+      notifications.show({
+        title: "Error",
+        message: err.message || "Failed to download PDF",
+        color: "red",
+      });
+    }
+  };
+
+  /* ── Assistant/Convenor actions ──────────────────────────────────── */
+
   const updateStatusAPI = async (appId, type, action, note = "") => {
     try {
       if (type === "mcm") await api.updateMCMStatus(appId, action, note);
       else if (type === "gold") await api.updateGoldStatus(appId, action, note);
       else if (type === "silver")
         await api.updateSilverStatus(appId, action, note);
-      // PDM hasn't been added to api.js explicitly yet for status, but it's consistent if needed.
 
       notifications.show({
         title: "Success",
         message: `Application marked as ${action}`,
         color: "green",
       });
-      fetchData(); // Refresh list
+      fetchData();
     } catch (err) {
       notifications.show({
         title: "Error",
@@ -181,8 +253,14 @@ function ApplicationsTable({ onApply }) {
     }
   };
 
+  /* ── Table rows ──────────────────────────────────────────────────── */
+
   const rows = applications.map((app) => {
     const rawStatus = app.status ? app.status.toUpperCase() : "PENDING";
+    const canWithdraw =
+      isStudent && (rawStatus === "PENDING" || rawStatus === "INCOMPLETE");
+    const canEdit = isStudent && rawStatus === "PENDING";
+    const canDownload = isStudent;
 
     return (
       <Table.Tr key={`${app.key_type}-${app.id}`}>
@@ -190,31 +268,82 @@ function ApplicationsTable({ onApply }) {
           <Text size="sm">{app.id}</Text>
         </Table.Td>
         <Table.Td>
-          <Text size="sm">{app.student || "23BCS268"}</Text>
+          <Text size="sm">{app.student || "—"}</Text>
         </Table.Td>
         <Table.Td>
           <Text size="sm">{app.type_name}</Text>
         </Table.Td>
         <Table.Td>
-          <Text size="sm">2025-26</Text>
+          <Text size="sm">{app.academic_year || "2025-26"}</Text>
         </Table.Td>
         <Table.Td>
-          <Text size="sm">6</Text>
+          <Text size="sm">{app.semester || "6"}</Text>
         </Table.Td>
         <Table.Td>
           <StatusBadge status={rawStatus} />
         </Table.Td>
         <Table.Td>
-          <Text size="sm">{app.date || "4/13/2026"}</Text>
+          <Text size="sm">
+            {app.date
+              ? new Date(app.date).toLocaleDateString()
+              : new Date().toLocaleDateString()}
+          </Text>
         </Table.Td>
         <Table.Td>
           <Group gap="xs">
             {/* View Details */}
             <Tooltip label="View Details">
-              <ActionIcon variant="subtle" color="blue" size="md">
+              <ActionIcon
+                variant="subtle"
+                color="blue"
+                size="md"
+                onClick={() => setViewModal({ open: true, app })}
+              >
                 <Eye size={18} />
               </ActionIcon>
             </Tooltip>
+
+            {/* Student: Withdraw */}
+            {canWithdraw && (
+              <Tooltip label="Withdraw Application">
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  size="md"
+                  onClick={() => setWithdrawModal({ open: true, app })}
+                >
+                  <XCircle size={18} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+
+            {/* Student: Edit */}
+            {canEdit && onEdit && (
+              <Tooltip label="Edit Application">
+                <ActionIcon
+                  variant="subtle"
+                  color="orange"
+                  size="md"
+                  onClick={() => onEdit(app)}
+                >
+                  <PencilSimple size={18} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+
+            {/* Student: Download PDF */}
+            {canDownload && (
+              <Tooltip label="Download PDF">
+                <ActionIcon
+                  variant="subtle"
+                  color="teal"
+                  size="md"
+                  onClick={() => handleDownloadPDF(app)}
+                >
+                  <DownloadSimple size={18} />
+                </ActionIcon>
+              </Tooltip>
+            )}
 
             {/* Assistant Actions */}
             {isAssistant && rawStatus === "PENDING" && (
@@ -280,7 +409,7 @@ function ApplicationsTable({ onApply }) {
               </Tooltip>
             )}
 
-            {/* Student View Notes */}
+            {/* Student: View Notes when INCOMPLETE */}
             {isStudent && rawStatus === "INCOMPLETE" && (
               <Tooltip label="View Messages">
                 <ActionIcon
@@ -383,7 +512,107 @@ function ApplicationsTable({ onApply }) {
         </Table.Tbody>
       </Table>
 
-      {/* Workflow Modals */}
+      {/* ── Withdraw Confirmation Modal ─────────────────────────────── */}
+      <Modal
+        opened={withdrawModal.open}
+        onClose={() => {
+          setWithdrawModal({ open: false, app: null });
+          setWithdrawReason("");
+        }}
+        title="Withdraw Application"
+        centered
+      >
+        <Text size="sm" mb="md">
+          Are you sure you want to withdraw your application for{" "}
+          <strong>{withdrawModal.app?.type_name}</strong>? This action cannot be
+          undone.
+        </Text>
+        <Textarea
+          label="Reason for withdrawal"
+          placeholder="Please provide a reason..."
+          value={withdrawReason}
+          onChange={(e) => setWithdrawReason(e.target.value)}
+          minRows={3}
+          withAsterisk
+          mb="md"
+        />
+        <Group justify="flex-end">
+          <Button
+            variant="default"
+            onClick={() => {
+              setWithdrawModal({ open: false, app: null });
+              setWithdrawReason("");
+            }}
+          >
+            Cancel
+          </Button>
+          <Button color="red" onClick={handleWithdraw} loading={withdrawing}>
+            Withdraw
+          </Button>
+        </Group>
+      </Modal>
+
+      {/* ── View Details Modal ──────────────────────────────────────── */}
+      <Modal
+        opened={viewModal.open}
+        onClose={() => setViewModal({ open: false, app: null })}
+        title="Application Details"
+        size="lg"
+        centered
+      >
+        {viewModal.app && (
+          <div>
+            <Table verticalSpacing="sm">
+              <Table.Tbody>
+                <Table.Tr>
+                  <Table.Td fw={600}>Application ID</Table.Td>
+                  <Table.Td>{viewModal.app.id}</Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>Student</Table.Td>
+                  <Table.Td>{viewModal.app.student || "—"}</Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>Scholarship</Table.Td>
+                  <Table.Td>{viewModal.app.type_name}</Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>Academic Year</Table.Td>
+                  <Table.Td>
+                    {viewModal.app.academic_year || "2025-26"}
+                  </Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>Semester</Table.Td>
+                  <Table.Td>{viewModal.app.semester || "6"}</Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>Status</Table.Td>
+                  <Table.Td>
+                    <StatusBadge
+                      status={
+                        viewModal.app.status
+                          ? viewModal.app.status.toUpperCase()
+                          : "PENDING"
+                      }
+                    />
+                  </Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={600}>Applied On</Table.Td>
+                  <Table.Td>
+                    {viewModal.app.date
+                      ? new Date(viewModal.app.date).toLocaleDateString()
+                      : new Date().toLocaleDateString()}
+                  </Table.Td>
+                </Table.Tr>
+              </Table.Tbody>
+            </Table>
+          </div>
+        )}
+      </Modal>
+
+      {/* ── Ask Info Modal (Assistant/Convenor) ─────────────────────── */}
       <Modal
         opened={askInfoModal.open}
         onClose={() => setAskInfoModal({ open: false, app: null, note: "" })}
@@ -406,6 +635,7 @@ function ApplicationsTable({ onApply }) {
         </Group>
       </Modal>
 
+      {/* ── View Notes Modal (Student) ──────────────────────────────── */}
       <Modal
         opened={viewNotesModal.open}
         onClose={() =>
@@ -446,6 +676,7 @@ function ApplicationsTable({ onApply }) {
 
 ApplicationsTable.propTypes = {
   onApply: PropTypes.func.isRequired,
+  onEdit: PropTypes.func,
 };
 
 export default ApplicationsTable;

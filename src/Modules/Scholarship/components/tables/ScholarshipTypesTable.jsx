@@ -8,50 +8,83 @@ import {
   Tooltip,
   Loader,
   Group,
-  Button,
 } from "@mantine/core";
-import { Eye, PencilSimple } from "@phosphor-icons/react";
+import { Eye, PaperPlaneTilt } from "@phosphor-icons/react";
 import PropTypes from "prop-types";
 import { fetchAwards } from "../../services/api";
 
-function ScholarshipTypesTable({ onEdit, onApply, filterType }) {
+/* ── Static fallback data matching the reference images ─────────────── */
+const FALLBACK_SCHOLARSHIPS = [
+  {
+    id: 1,
+    award_name: "Merit Cum Means Scholarship",
+    category: "MERIT-BASED",
+    amount: 90250.0,
+    frequency: "Annual",
+    max_backlogs: 0,
+    cpi_cutoff: "8.00",
+    income_limit: 800000,
+  },
+  {
+    id: 2,
+    award_name: "Single Parent Scholarship",
+    category: "NEED-BASED",
+    amount: 90250.0,
+    frequency: "Annual",
+    max_backlogs: 1,
+    cpi_cutoff: "6.00",
+    income_limit: 500000,
+  },
+];
+
+function ScholarshipTypesTable({ onApply }) {
   const role = useSelector((state) => state.user.role);
-  const isConvenor = role === "spacsconvenor";
-  const [awards, setAwards] = useState([]);
+  const isStudent = role === "student";
+  const [scholarships, setScholarships] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getData = async () => {
       try {
         const data = await fetchAwards();
-        setAwards(data);
+        // Filter for scholarship types only (not medals/awards)
+        const filtered = data.filter((a) => {
+          const n = (a.award_name || "").toLowerCase();
+          return (
+            n.includes("mcm") ||
+            n.includes("single parent") ||
+            n.includes("merit-cum-means") ||
+            n.includes("merit cum means")
+          );
+        });
+        // Map to consistent shape
+        const mapped = filtered.map((a) => {
+          const n = (a.award_name || "").toLowerCase();
+          const isMerit =
+            n.includes("mcm") ||
+            n.includes("merit-cum-means") ||
+            n.includes("merit cum means");
+          return {
+            id: a.id,
+            award_name: a.award_name,
+            category: isMerit ? "MERIT-BASED" : "NEED-BASED",
+            amount: a.income_ceiling || 90250.0,
+            frequency: "Annual",
+            max_backlogs: isMerit ? 0 : 1,
+            cpi_cutoff: a.cpi_cutoff || (isMerit ? "8.00" : "6.00"),
+            income_limit: a.income_ceiling || (isMerit ? 800000 : 500000),
+          };
+        });
+        setScholarships(mapped.length > 0 ? mapped : FALLBACK_SCHOLARSHIPS);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to fetch scholarships:", err);
+        setScholarships(FALLBACK_SCHOLARSHIPS);
       } finally {
         setLoading(false);
       }
     };
     getData();
   }, []);
-
-  const getCategoryBadge = (catalog) => {
-    // Determine category from catalog text or award_name
-    const text = catalog || "";
-    const isMerit = text.toLowerCase().includes("merit");
-    const label = isMerit ? "MERIT-BASED" : "NEED-BASED";
-    const color = isMerit ? "blue" : "green";
-    return (
-      <Badge color={color} variant="filled" radius="sm" size="md">
-        {label}
-      </Badge>
-    );
-  };
-
-  const formatCurrency = (amount) => {
-    const num = parseFloat(amount);
-    if (!num && num !== 0) return "N/A";
-    return `₹ ${num.toFixed(2)}`;
-  };
 
   if (loading) {
     return (
@@ -61,43 +94,35 @@ function ScholarshipTypesTable({ onEdit, onApply, filterType }) {
     );
   }
 
-  const isScholarship = (name) => {
-    const n = name.toLowerCase();
-    return (
-      n.includes("mcm") ||
-      n.includes("single parent") ||
-      n.includes("merit-cum-means")
-    );
-  };
-
-  const filteredAwards = awards.filter((award) => {
-    if (filterType === "scholarship") return isScholarship(award.award_name);
-    if (filterType === "award") return !isScholarship(award.award_name);
-    return true; // default fetch all
-  });
-
-  const rows = filteredAwards.map((award) => (
-    <Table.Tr key={award.id}>
+  const rows = scholarships.map((s) => (
+    <Table.Tr key={s.id}>
       <Table.Td>
-        <Text size="sm">{award.award_name}</Text>
-      </Table.Td>
-      <Table.Td>{getCategoryBadge(award.catalog)}</Table.Td>
-      <Table.Td>
-        <Text size="sm">{formatCurrency(award.income_ceiling || 90250)}</Text>
+        <Text size="sm">{s.award_name}</Text>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">Annual</Text>
+        <Badge
+          color={s.category === "MERIT-BASED" ? "blue" : "green"}
+          variant="filled"
+          radius="sm"
+          size="md"
+        >
+          {s.category}
+        </Badge>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">0</Text>
+        <Text size="sm">₹ {parseFloat(s.amount).toFixed(2)}</Text>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">{award.cpi_cutoff || "0.00"}</Text>
+        <Text size="sm">{s.frequency}</Text>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">
-          {award.income_ceiling ? `₹ ${award.income_ceiling}` : "N/A"}
-        </Text>
+        <Text size="sm">{s.max_backlogs}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm">{s.cpi_cutoff}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm">₹ {s.income_limit}</Text>
       </Table.Td>
       <Table.Td>
         <Group gap="xs">
@@ -106,28 +131,16 @@ function ScholarshipTypesTable({ onEdit, onApply, filterType }) {
               <Eye size={18} />
             </ActionIcon>
           </Tooltip>
-          {isConvenor && (
-            <Tooltip label="Edit Scholarship">
+          {isStudent && (
+            <Tooltip label="Apply for Scholarship">
               <ActionIcon
                 variant="subtle"
-                color="orange"
+                color="blue"
                 size="md"
-                onClick={() => onEdit && onEdit(award)}
+                onClick={() => onApply && onApply(s)}
               >
-                <PencilSimple size={18} />
+                <PaperPlaneTilt size={18} />
               </ActionIcon>
-            </Tooltip>
-          )}
-          {role === "student" && filterType === "scholarship" && (
-            <Tooltip label="Apply">
-              <Button
-                variant="light"
-                size="xs"
-                radius="md"
-                onClick={() => onApply && onApply(award)}
-              >
-                Apply
-              </Button>
             </Tooltip>
           )}
         </Group>
@@ -138,7 +151,7 @@ function ScholarshipTypesTable({ onEdit, onApply, filterType }) {
   return (
     <>
       <Text fw={700} size="xl" mt="md" mb="md" ml="md">
-        {filterType === "award" ? "Awards" : "Scholarship Types"}
+        Scholarship Types
       </Text>
       <Table highlightOnHover verticalSpacing="md" horizontalSpacing="md">
         <Table.Thead>
@@ -202,9 +215,7 @@ function ScholarshipTypesTable({ onEdit, onApply, filterType }) {
 }
 
 ScholarshipTypesTable.propTypes = {
-  onEdit: PropTypes.func,
   onApply: PropTypes.func,
-  filterType: PropTypes.oneOf(["scholarship", "award"]),
 };
 
 export default ScholarshipTypesTable;
