@@ -1,28 +1,30 @@
-import { useState, useMemo } from "react";
+import { useState, useRef } from "react";
 import { CaretCircleLeft, CaretCircleRight } from "@phosphor-icons/react";
-import { Tabs, Button, Flex, Text, Container } from "@mantine/core";
-import ScholarshipBreadcrumbs from "./ScholarshipBreadcrumbs";
+import { Tabs, Button, Flex, Text } from "@mantine/core";
+import CustomBreadcrumbs from "../../../../components/Breadcrumbs";
+import classes from "../../../Dashboard/Dashboard.module.css";
 
-// Consolidated Page Components
+// Table components
 import ScholarshipTypesTable from "../tables/ScholarshipTypesTable";
 import ApplicationsTable from "../tables/ApplicationsTable";
 import AwardsTable from "../tables/AwardsTable";
+
+// Form components
 import NewApplicationForm from "../forms/NewApplicationForm";
+import EditScholarshipForm from "../forms/EditScholarshipForm";
 
 function ScholarshipShell() {
   const [activeTab, setActiveTab] = useState("types");
   const [viewingForm, setViewingForm] = useState(false);
+  const [editingScholarship, setEditingScholarship] = useState(null);
+  const tabsListRef = useRef(null);
 
-  // Tabs are consistent across roles as per ref images
-  const tabItems = useMemo(
-    () => [
-      { key: "types", label: "Scholarship Types" },
-      { key: "applications", label: "Applications" },
-      { key: "awards", label: "Awards" },
-      { key: "merit_lists", label: "Merit Lists" },
-    ],
-    [],
-  );
+  const tabItems = [
+    { key: "types", label: "Scholarship Types" },
+    { key: "applications", label: "Applications" },
+    { key: "awards", label: "Awards" },
+    { key: "merit_lists", label: "Merit Lists" },
+  ];
 
   const handleTabChange = (direction) => {
     const currentIndex = tabItems.findIndex((item) => item.key === activeTab);
@@ -34,42 +36,52 @@ function ScholarshipShell() {
     }
     setActiveTab(tabItems[newIndex].key);
     setViewingForm(false);
+    setEditingScholarship(null);
+
+    if (tabsListRef.current) {
+      tabsListRef.current.scrollBy({
+        left: direction === "next" ? 50 : -50,
+        behavior: "smooth",
+      });
+    }
   };
 
-  const breadcrumbItems = [
-    {
-      title: tabItems.find((t) => t.key === activeTab)?.label || "Types",
-      path: "#",
-    },
-  ];
-
   const renderActiveTab = () => {
+    // Student apply form
     if (viewingForm) {
       return <NewApplicationForm onCancel={() => setViewingForm(false)} />;
     }
 
+    // Convenor edit scholarship form
+    if (editingScholarship) {
+      return (
+        <EditScholarshipForm
+          scholarship={editingScholarship}
+          onCancel={() => setEditingScholarship(null)}
+          onSaved={() => {
+            setEditingScholarship(null);
+          }}
+        />
+      );
+    }
+
     switch (activeTab) {
       case "types":
-        return <ScholarshipTypesTable onApply={() => setViewingForm(true)} />;
+        return (
+          <ScholarshipTypesTable
+            onApply={() => setViewingForm(true)}
+            onEdit={(award) => setEditingScholarship(award)}
+          />
+        );
       case "applications":
         return <ApplicationsTable onApply={() => setViewingForm(true)} />;
       case "awards":
         return <AwardsTable />;
       case "merit_lists":
         return (
-          <div
-            style={{
-              padding: "2rem",
-              textAlign: "center",
-              backgroundColor: "#fff",
-              border: "1px solid #eee",
-              borderRadius: "8px",
-            }}
-          >
-            <Text c="dimmed">
-              Merit lists will be displayed here once generated.
-            </Text>
-          </div>
+          <Text c="dimmed" ta="center" py="xl">
+            Merit lists will be displayed here once generated.
+          </Text>
         );
       default:
         return <ScholarshipTypesTable />;
@@ -77,52 +89,54 @@ function ScholarshipShell() {
   };
 
   return (
-    <Container
-      size="xl"
-      py="lg"
-      style={{ backgroundColor: "#F8F9FA", minHeight: "100vh" }}
-    >
-      <ScholarshipBreadcrumbs items={breadcrumbItems} />
-
-      <Flex align="center" gap="md" mt="xl" mb="xl">
+    <>
+      <CustomBreadcrumbs />
+      <Flex
+        justify="flex-start"
+        align="center"
+        gap={{ base: "0.75rem", md: "1.25rem" }}
+        mt={{ base: "1.5rem", md: "2rem" }}
+        ml={{ md: "lg" }}
+        style={{ fontSize: "1.5rem" }}
+      >
         <Button
           onClick={() => handleTabChange("prev")}
-          variant="subtle"
+          variant="default"
           p={0}
-          hiddenFrom="md"
+          style={{ border: "none" }}
         >
-          <CaretCircleLeft size={32} weight="light" />
+          <CaretCircleLeft
+            className={classes.fusionCaretCircleIcon}
+            weight="light"
+            size={32}
+          />
         </Button>
 
-        <div style={{ borderBottom: "1px solid #E0E0E0", width: "100%" }}>
+        <div className={classes.fusionTabsContainer} ref={tabsListRef}>
           <Tabs
             value={activeTab}
             onChange={(val) => {
               setActiveTab(val);
               setViewingForm(false);
+              setEditingScholarship(null);
             }}
-            variant="pills"
           >
-            <Tabs.List style={{ gap: "0" }}>
+            <Tabs.List style={{ display: "flex", flexWrap: "nowrap" }}>
               {tabItems.map((item) => (
                 <Tabs.Tab
                   value={item.key}
                   key={item.key}
-                  px="xl"
-                  py="md"
+                  className={
+                    activeTab === item.key ? classes.fusionActiveRecentTab : ""
+                  }
                   style={{
-                    backgroundColor:
-                      activeTab === item.key ? "#EDF7FF" : "transparent",
-                    color: activeTab === item.key ? "#1971C2" : "#666",
-                    borderBottom:
-                      activeTab === item.key ? "3px solid #1971C2" : "none",
-                    borderRadius: "0",
-                    transition: "all 0.2s ease",
-                    fontWeight: activeTab === item.key ? 700 : 500,
-                    fontSize: "1rem",
+                    padding: "1rem 1.5rem",
+                    color: activeTab === item.key ? "#17ABFF" : "black",
                   }}
                 >
-                  {item.label}
+                  <Text size="lg" fw={activeTab === item.key ? 700 : 500}>
+                    {item.label}
+                  </Text>
                 </Tabs.Tab>
               ))}
             </Tabs.List>
@@ -131,25 +145,20 @@ function ScholarshipShell() {
 
         <Button
           onClick={() => handleTabChange("next")}
-          variant="subtle"
+          variant="default"
           p={0}
-          hiddenFrom="md"
+          style={{ border: "none" }}
         >
-          <CaretCircleRight size={32} weight="light" />
+          <CaretCircleRight
+            className={classes.fusionCaretCircleIcon}
+            weight="light"
+            size={32}
+          />
         </Button>
       </Flex>
 
-      <div
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: "8px",
-          border: "1px solid #EEE",
-          padding: "1rem",
-        }}
-      >
-        {renderActiveTab()}
-      </div>
-    </Container>
+      {renderActiveTab()}
+    </>
   );
 }
 

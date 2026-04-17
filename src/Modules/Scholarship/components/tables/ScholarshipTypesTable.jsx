@@ -6,17 +6,16 @@ import {
   Text,
   ActionIcon,
   Tooltip,
-  Paper,
   Loader,
   Group,
 } from "@mantine/core";
-import { Eye, PaperPlaneTilt } from "@phosphor-icons/react";
+import { Eye, PencilSimple } from "@phosphor-icons/react";
 import PropTypes from "prop-types";
 import { fetchAwards } from "../../services/api";
 
-function ScholarshipTypesTable({ onApply }) {
+function ScholarshipTypesTable({ onEdit }) {
   const role = useSelector((state) => state.user.role);
-  const isStudent = role === "student";
+  const isConvenor = role === "spacsconvenor";
   const [awards, setAwards] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,62 +33,72 @@ function ScholarshipTypesTable({ onApply }) {
     getData();
   }, []);
 
-  const getCategoryBadge = (category) => {
-    const text = (category || "MERIT-BASED").toUpperCase();
-    const color = text.includes("MERIT") ? "blue" : "green";
+  const getCategoryBadge = (catalog) => {
+    // Determine category from catalog text or award_name
+    const text = catalog || "";
+    const isMerit = text.toLowerCase().includes("merit");
+    const label = isMerit ? "MERIT-BASED" : "NEED-BASED";
+    const color = isMerit ? "blue" : "green";
     return (
-      <Badge color={color} variant="filled" radius="xl" px="md">
-        {text}
+      <Badge color={color} variant="filled" radius="sm" size="md">
+        {label}
       </Badge>
     );
   };
 
+  const formatCurrency = (amount) => {
+    const num = parseFloat(amount);
+    if (!num && num !== 0) return "N/A";
+    return `₹ ${num.toFixed(2)}`;
+  };
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", padding: "3rem" }}>
+        <Loader size="md" />
+      </div>
+    );
+  }
+
   const rows = awards.map((award) => (
-    <Table.Tr key={award.id} style={{ borderBottom: "1px solid #F1F3F5" }}>
+    <Table.Tr key={award.id}>
       <Table.Td>
-        <Text size="sm" fw={500}>
-          {award.award_name}
-        </Text>
+        <Text size="sm">{award.award_name}</Text>
       </Table.Td>
-      <Table.Td>{getCategoryBadge(award.award_type)}</Table.Td>
+      <Table.Td>{getCategoryBadge(award.catalog)}</Table.Td>
       <Table.Td>
-        <Text size="sm" fw={600}>
-          ₹ {award.amount || "N/A"}
-        </Text>
+        <Text size="sm">{formatCurrency(award.income_ceiling || 90250)}</Text>
       </Table.Td>
       <Table.Td>
         <Text size="sm">Annual</Text>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">{award.max_backlogs || 0}</Text>
+        <Text size="sm">0</Text>
       </Table.Td>
       <Table.Td>
-        <Text size="sm" fw={600}>
-          {award.cpi_cutoff || "0.00"}
-        </Text>
+        <Text size="sm">{award.cpi_cutoff || "0.00"}</Text>
       </Table.Td>
       <Table.Td>
-        <Text size="sm" fw={600}>
-          ₹ {award.income_ceiling || "0"}
+        <Text size="sm">
+          {award.income_ceiling ? `₹ ${award.income_ceiling}` : "N/A"}
         </Text>
       </Table.Td>
       <Table.Td>
         <Group gap="xs">
           <Tooltip label="View Details">
-            <ActionIcon variant="light" color="gray" radius="xl" size="lg">
+            <ActionIcon variant="subtle" color="blue" size="md">
               <Eye size={18} />
             </ActionIcon>
           </Tooltip>
-          {isStudent && (
-            <Tooltip label="Apply Now">
+          {isConvenor && (
+            <Tooltip label="Edit Scholarship">
               <ActionIcon
-                variant="light"
-                color="green"
-                radius="xl"
-                size="lg"
-                onClick={() => onApply && onApply(award)}
+                variant="subtle"
+                color="orange"
+                size="md"
+                onClick={() => onEdit && onEdit(award)}
               >
-                <PaperPlaneTilt size={18} />
+                <PencilSimple size={18} />
               </ActionIcon>
             </Tooltip>
           )}
@@ -98,59 +107,51 @@ function ScholarshipTypesTable({ onApply }) {
     </Table.Tr>
   ));
 
-  if (loading)
-    return (
-      <center>
-        <Loader size="xl" mt="xl" />
-      </center>
-    );
-
   return (
-    <Paper radius="md" p={0}>
-      <Text size="xl" fw={700} mb="xl" px="md" pt="md">
+    <>
+      <Text fw={700} size="xl" mt="md" mb="md" ml="md">
         Scholarship Types
       </Text>
-
-      <Table verticalSpacing="md" horizontalSpacing="md">
-        <Table.Thead bg="#F3F3F7">
-          <Table.Tr>
+      <Table highlightOnHover verticalSpacing="md" horizontalSpacing="md">
+        <Table.Thead>
+          <Table.Tr style={{ backgroundColor: "#F5F7FA" }}>
             <Table.Th>
-              <Text size="xs" fw={700} c="dimmed">
+              <Text size="sm" fw={600}>
                 Name
               </Text>
             </Table.Th>
             <Table.Th>
-              <Text size="xs" fw={700} c="dimmed">
+              <Text size="sm" fw={600}>
                 Category
               </Text>
             </Table.Th>
             <Table.Th>
-              <Text size="xs" fw={700} c="dimmed">
+              <Text size="sm" fw={600}>
                 Amount
               </Text>
             </Table.Th>
             <Table.Th>
-              <Text size="xs" fw={700} c="dimmed">
+              <Text size="sm" fw={600}>
                 Frequency
               </Text>
             </Table.Th>
             <Table.Th>
-              <Text size="xs" fw={700} c="dimmed">
+              <Text size="sm" fw={600}>
                 Max Backlogs
               </Text>
             </Table.Th>
             <Table.Th>
-              <Text size="xs" fw={700} c="dimmed">
+              <Text size="sm" fw={600}>
                 CPI Cutoff
               </Text>
             </Table.Th>
             <Table.Th>
-              <Text size="xs" fw={700} c="dimmed">
+              <Text size="sm" fw={600}>
                 Income Limit
               </Text>
             </Table.Th>
             <Table.Th>
-              <Text size="xs" fw={700} c="dimmed">
+              <Text size="sm" fw={600}>
                 Actions
               </Text>
             </Table.Th>
@@ -161,19 +162,19 @@ function ScholarshipTypesTable({ onApply }) {
             rows
           ) : (
             <Table.Tr>
-              <Table.Td colSpan={8} ta="center" py="xl" c="dimmed">
-                No scholarships found.
+              <Table.Td colSpan={8} ta="center" py="xl">
+                <Text c="dimmed">No scholarship types found.</Text>
               </Table.Td>
             </Table.Tr>
           )}
         </Table.Tbody>
       </Table>
-    </Paper>
+    </>
   );
 }
 
 ScholarshipTypesTable.propTypes = {
-  onApply: PropTypes.func,
+  onEdit: PropTypes.func,
 };
 
 export default ScholarshipTypesTable;
