@@ -7,10 +7,8 @@ import classes from "../../../Dashboard/Dashboard.module.css";
 // Table components
 import ScholarshipTypesTable from "../tables/ScholarshipTypesTable";
 import ApplicationsTable from "../tables/ApplicationsTable";
-import AwardsTable from "../tables/AwardsTable";
-
 // Form components
-import NewApplicationForm from "../forms/NewApplicationForm";
+import ScholarshipForm from "../forms/ScholarshipForm";
 import EditScholarshipForm from "../forms/EditScholarshipForm";
 
 function ScholarshipShell() {
@@ -49,7 +47,7 @@ function ScholarshipShell() {
   const renderActiveTab = () => {
     // Student apply form
     if (viewingForm) {
-      return <NewApplicationForm onCancel={() => setViewingForm(false)} />;
+      return <ScholarshipForm onCancel={() => setViewingForm(false)} />;
     }
 
     // Convenor edit scholarship form
@@ -69,6 +67,7 @@ function ScholarshipShell() {
       case "types":
         return (
           <ScholarshipTypesTable
+            filterType="scholarship"
             onApply={() => setViewingForm(true)}
             onEdit={(award) => setEditingScholarship(award)}
           />
@@ -76,7 +75,7 @@ function ScholarshipShell() {
       case "applications":
         return <ApplicationsTable onApply={() => setViewingForm(true)} />;
       case "awards":
-        return <AwardsTable />;
+        return <ScholarshipTypesTable filterType="award" />;
       case "merit_lists":
         return (
           <Text c="dimmed" ta="center" py="xl">

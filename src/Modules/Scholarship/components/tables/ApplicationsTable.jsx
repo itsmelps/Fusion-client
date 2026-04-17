@@ -10,7 +10,11 @@ import {
   Tooltip,
   Loader,
   Flex,
+  Modal,
+  Textarea,
+  ScrollArea,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import {
   Eye,
   Plus,
@@ -56,6 +60,18 @@ function ApplicationsTable({ onApply }) {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Workflow Modal state
+  const [askInfoModal, setAskInfoModal] = useState({
+    open: false,
+    app: null,
+    note: "",
+  });
+  const [viewNotesModal, setViewNotesModal] = useState({
+    open: false,
+    notes: [],
+    loading: false,
+  });
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -96,7 +112,6 @@ function ApplicationsTable({ onApply }) {
         })),
       ];
 
-      // Sort by date or id
       setApplications(combined.sort((a, b) => b.id - a.id));
     } catch (err) {
       console.error("Error fetching applications:", err);
@@ -109,10 +124,61 @@ function ApplicationsTable({ onApply }) {
     fetchData();
   }, [role]);
 
-  const handleAction = async (appId, type, action) => {
-    alert(`Triggered ${action} for application ${appId} of type ${type}`);
-    // Here we would wire up the API call for status update
-    // e.g., api.updateMCMStatus(appId, action, "test note")
+  const updateStatusAPI = async (appId, type, action, note = "") => {
+    try {
+      if (type === "mcm") await api.updateMCMStatus(appId, action, note);
+      else if (type === "gold") await api.updateGoldStatus(appId, action, note);
+      else if (type === "silver")
+        await api.updateSilverStatus(appId, action, note);
+      // PDM hasn't been added to api.js explicitly yet for status, but it's consistent if needed.
+
+      notifications.show({
+        title: "Success",
+        message: `Application marked as ${action}`,
+        color: "green",
+      });
+      fetchData(); // Refresh list
+    } catch (err) {
+      notifications.show({
+        title: "Error",
+        message: err.message || "Could not update status",
+        color: "red",
+      });
+    }
+  };
+
+  const handleAction = (app, action) => {
+    if (action === "ask_info") {
+      setAskInfoModal({ open: true, app, note: "" });
+      return;
+    }
+    updateStatusAPI(app.id, app.key_type, action);
+  };
+
+  const handleAskInfoSubmit = async () => {
+    if (!askInfoModal.note.trim()) {
+      notifications.show({ message: "Please enter a note", color: "red" });
+      return;
+    }
+    await updateStatusAPI(
+      askInfoModal.app.id,
+      askInfoModal.app.key_type,
+      "ask_info",
+      askInfoModal.note,
+    );
+    setAskInfoModal({ open: false, app: null, note: "" });
+  };
+
+  const handleViewNotes = async (app) => {
+    setViewNotesModal({ open: true, loading: true, notes: [] });
+    try {
+      const data = await api.fetchApplicationNotes(app.key_type, app.id);
+      setViewNotesModal({ open: true, loading: false, notes: data });
+    } catch (err) {
+      console.error(err);
+      setViewNotesModal({ open: true, loading: false, notes: [] });
+      notifications.show({ message: "Failed to load notes", color: "red" });
+    }
   };
 
   const rows = applications.map((app) => {
@@ -143,7 +209,7 @@ function ApplicationsTable({ onApply }) {
         </Table.Td>
         <Table.Td>
           <Group gap="xs">
-            {/* Everyone can view */}
+            {/* View Details */}
             <Tooltip label="View Details">
               <ActionIcon variant="subtle" color="blue" size="md">
                 <Eye size={18} />
@@ -152,16 +218,28 @@ function ApplicationsTable({ onApply }) {
 
             {/* Assistant Actions */}
             {isAssistant && rawStatus === "PENDING" && (
-              <Tooltip label="Ask Info / Forward">
-                <ActionIcon
-                  variant="subtle"
-                  color="green"
-                  size="md"
-                  onClick={() => handleAction(app.id, app.key_type, "forward")}
-                >
-                  <CheckCircle size={18} />
-                </ActionIcon>
-              </Tooltip>
+              <>
+                <Tooltip label="Forward to Convenor">
+                  <ActionIcon
+                    variant="subtle"
+                    color="indigo"
+                    size="md"
+                    onClick={() => handleAction(app, "forward")}
+                  >
+                    <CheckCircle size={18} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Ask Student for Info">
+                  <ActionIcon
+                    variant="subtle"
+                    color="orange"
+                    size="md"
+                    onClick={() => handleAction(app, "ask_info")}
+                  >
+                    <ChatCircleText size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </>
             )}
 
             {/* Convenor Actions */}
@@ -172,7 +250,7 @@ function ApplicationsTable({ onApply }) {
                     variant="subtle"
                     color="green"
                     size="md"
-                    onClick={() => handleAction(app.id, app.key_type, "accept")}
+                    onClick={() => handleAction(app, "accept")}
                   >
                     <CheckCircle size={18} />
                   </ActionIcon>
@@ -182,7 +260,7 @@ function ApplicationsTable({ onApply }) {
                     variant="subtle"
                     color="red"
                     size="md"
-                    onClick={() => handleAction(app.id, app.key_type, "reject")}
+                    onClick={() => handleAction(app, "reject")}
                   >
                     <XCircle size={18} />
                   </ActionIcon>
@@ -195,7 +273,21 @@ function ApplicationsTable({ onApply }) {
                   variant="subtle"
                   color="orange"
                   size="md"
-                  onClick={() => handleAction(app.id, app.key_type, "ask_info")}
+                  onClick={() => handleAction(app, "ask_info")}
+                >
+                  <ChatCircleText size={18} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+
+            {/* Student View Notes */}
+            {isStudent && rawStatus === "INCOMPLETE" && (
+              <Tooltip label="View Messages">
+                <ActionIcon
+                  variant="subtle"
+                  color="orange"
+                  size="md"
+                  onClick={() => handleViewNotes(app)}
                 >
                   <ChatCircleText size={18} />
                 </ActionIcon>
@@ -290,6 +382,64 @@ function ApplicationsTable({ onApply }) {
           )}
         </Table.Tbody>
       </Table>
+
+      {/* Workflow Modals */}
+      <Modal
+        opened={askInfoModal.open}
+        onClose={() => setAskInfoModal({ open: false, app: null, note: "" })}
+        title="Ask Student for Information"
+      >
+        <Textarea
+          label="Message"
+          placeholder="Please provide your latest transcript..."
+          value={askInfoModal.note}
+          onChange={(e) =>
+            setAskInfoModal({ ...askInfoModal, note: e.target.value })
+          }
+          minRows={4}
+          withAsterisk
+        />
+        <Group justify="flex-end" mt="md">
+          <Button color="blue" onClick={handleAskInfoSubmit}>
+            Send Message
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal
+        opened={viewNotesModal.open}
+        onClose={() =>
+          setViewNotesModal({ open: false, notes: [], loading: false })
+        }
+        title="Application Messages"
+      >
+        {viewNotesModal.loading ? (
+          <Loader />
+        ) : viewNotesModal.notes.length === 0 ? (
+          <Text c="dimmed">No messages found.</Text>
+        ) : (
+          <ScrollArea h={300}>
+            {viewNotesModal.notes.map((n) => (
+              <div
+                key={n.id}
+                style={{
+                  marginBottom: "1rem",
+                  backgroundColor: "#f8f9fa",
+                  padding: "10px",
+                  borderRadius: "8px",
+                }}
+              >
+                <Text size="xs" c="dimmed">
+                  {new Date(n.created_at).toLocaleString()} - {n.author_name}
+                </Text>
+                <Text size="sm" mt={4}>
+                  {n.note}
+                </Text>
+              </div>
+            ))}
+          </ScrollArea>
+        )}
+      </Modal>
     </>
   );
 }

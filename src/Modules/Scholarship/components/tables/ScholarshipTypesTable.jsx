@@ -8,12 +8,13 @@ import {
   Tooltip,
   Loader,
   Group,
+  Button,
 } from "@mantine/core";
 import { Eye, PencilSimple } from "@phosphor-icons/react";
 import PropTypes from "prop-types";
 import { fetchAwards } from "../../services/api";
 
-function ScholarshipTypesTable({ onEdit }) {
+function ScholarshipTypesTable({ onEdit, onApply, filterType }) {
   const role = useSelector((state) => state.user.role);
   const isConvenor = role === "spacsconvenor";
   const [awards, setAwards] = useState([]);
@@ -60,7 +61,22 @@ function ScholarshipTypesTable({ onEdit }) {
     );
   }
 
-  const rows = awards.map((award) => (
+  const isScholarship = (name) => {
+    const n = name.toLowerCase();
+    return (
+      n.includes("mcm") ||
+      n.includes("single parent") ||
+      n.includes("merit-cum-means")
+    );
+  };
+
+  const filteredAwards = awards.filter((award) => {
+    if (filterType === "scholarship") return isScholarship(award.award_name);
+    if (filterType === "award") return !isScholarship(award.award_name);
+    return true; // default fetch all
+  });
+
+  const rows = filteredAwards.map((award) => (
     <Table.Tr key={award.id}>
       <Table.Td>
         <Text size="sm">{award.award_name}</Text>
@@ -102,6 +118,18 @@ function ScholarshipTypesTable({ onEdit }) {
               </ActionIcon>
             </Tooltip>
           )}
+          {role === "student" && filterType === "scholarship" && (
+            <Tooltip label="Apply">
+              <Button
+                variant="light"
+                size="xs"
+                radius="md"
+                onClick={() => onApply && onApply(award)}
+              >
+                Apply
+              </Button>
+            </Tooltip>
+          )}
         </Group>
       </Table.Td>
     </Table.Tr>
@@ -110,7 +138,7 @@ function ScholarshipTypesTable({ onEdit }) {
   return (
     <>
       <Text fw={700} size="xl" mt="md" mb="md" ml="md">
-        Scholarship Types
+        {filterType === "award" ? "Awards" : "Scholarship Types"}
       </Text>
       <Table highlightOnHover verticalSpacing="md" horizontalSpacing="md">
         <Table.Thead>
@@ -175,6 +203,8 @@ function ScholarshipTypesTable({ onEdit }) {
 
 ScholarshipTypesTable.propTypes = {
   onEdit: PropTypes.func,
+  onApply: PropTypes.func,
+  filterType: PropTypes.oneOf(["scholarship", "award"]),
 };
 
 export default ScholarshipTypesTable;

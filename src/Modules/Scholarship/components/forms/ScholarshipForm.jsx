@@ -20,6 +20,7 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { IconAlertCircle, IconCircleCheck } from "@tabler/icons-react";
+import PropTypes from "prop-types";
 import {
   submitMCMApplicationsRoute,
   checkApplicationWindow,
@@ -33,7 +34,7 @@ import {
 
 const AWARD_TYPE = "mcm";
 
-function ScholarshipForm() {
+function ScholarshipForm({ onCancel }) {
   const [step, setStep] = useState(0); // 0 = personal/family, 1 = document upload, 2 = review
   const [uploadStatus, setUploadStatus] = useState({});
   const [documents, setDocuments] = useState({});
@@ -357,6 +358,12 @@ function ScholarshipForm() {
 
   return (
     <Container size="lg" mt="md">
+      <Group justify="flex-end" mb="sm">
+        <Button variant="default" onClick={onCancel}>
+          Cancel
+        </Button>
+      </Group>
+
       {/* BR-SPACS-002: Duplicate warning */}
       {duplicateWarning && (
         <Alert
@@ -600,6 +607,9 @@ function ScholarshipForm() {
               </Grid.Col>
             </Grid>
             <Group position="apart" mt="xl">
+              <Button variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
               <Button variant="outline" onClick={handleSaveDraft}>
                 Save Draft
               </Button>
@@ -704,5 +714,9 @@ function ScholarshipForm() {
     </Container>
   );
 }
+
+ScholarshipForm.propTypes = {
+  onCancel: PropTypes.func.isRequired,
+};
 
 export default ScholarshipForm;
