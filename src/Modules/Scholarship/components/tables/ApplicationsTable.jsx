@@ -258,13 +258,19 @@ function ApplicationsTable({ onApply, onEdit }) {
   const rows = applications.map((app) => {
     const rawStatus = app.status ? app.status.toUpperCase() : "INCOMPLETE";
     const isWithdrawalPending = app.withdrawal_pending;
-    // Student can withdraw only if status is SUBMITTED (not yet forwarded) and no pending withdrawal
-    const canWithdraw =
-      isStudent && rawStatus === "SUBMITTED" && !isWithdrawalPending;
-    // Student can edit only if status is INCOMPLETE (sent back by assistant) and no pending withdrawal
-    const canEdit =
-      isStudent && rawStatus === "INCOMPLETE" && !isWithdrawalPending;
-    const canDownload = isStudent;
+
+    // Statuses where actions are locked
+    const isLocked = [
+      "FORWARDED",
+      "ACCEPT",
+      "REJECT",
+      "ACCEPTED",
+      "REJECTED",
+    ].includes(rawStatus);
+
+    // Student can withdraw/edit if not locked and no pending withdrawal
+    const withdrawDisabled = isLocked || isWithdrawalPending;
+    const editDisabled = isLocked || isWithdrawalPending;
 
     return (
       <Table.Tr key={`${app.key_type}-${app.id}`}>
@@ -313,46 +319,52 @@ function ApplicationsTable({ onApply, onEdit }) {
               </ActionIcon>
             </Tooltip>
 
-            {/* Student: Withdraw */}
-            {canWithdraw && (
-              <Tooltip label="Withdraw Application">
-                <ActionIcon
-                  variant="subtle"
-                  color="red"
-                  size="md"
-                  onClick={() => setWithdrawModal({ open: true, app })}
+            {/* Student Actions */}
+            {isStudent && (
+              <>
+                <Tooltip
+                  label={
+                    withdrawDisabled
+                      ? "Withdrawal locked"
+                      : "Withdraw Application"
+                  }
                 >
-                  <XCircle size={18} />
-                </ActionIcon>
-              </Tooltip>
-            )}
+                  <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    size="md"
+                    disabled={withdrawDisabled}
+                    onClick={() => setWithdrawModal({ open: true, app })}
+                  >
+                    <XCircle size={18} />
+                  </ActionIcon>
+                </Tooltip>
 
-            {/* Student: Edit */}
-            {canEdit && onEdit && (
-              <Tooltip label="Edit Application">
-                <ActionIcon
-                  variant="subtle"
-                  color="orange"
-                  size="md"
-                  onClick={() => onEdit(app)}
+                <Tooltip
+                  label={editDisabled ? "Editing locked" : "Edit Application"}
                 >
-                  <PencilSimple size={18} />
-                </ActionIcon>
-              </Tooltip>
-            )}
+                  <ActionIcon
+                    variant="subtle"
+                    color="orange"
+                    size="md"
+                    disabled={editDisabled}
+                    onClick={() => onEdit(app)}
+                  >
+                    <PencilSimple size={18} />
+                  </ActionIcon>
+                </Tooltip>
 
-            {/* Student: Download PDF */}
-            {canDownload && (
-              <Tooltip label="Download PDF">
-                <ActionIcon
-                  variant="subtle"
-                  color="teal"
-                  size="md"
-                  onClick={() => handleDownloadPDF(app)}
-                >
-                  <DownloadSimple size={18} />
-                </ActionIcon>
-              </Tooltip>
+                <Tooltip label="Download PDF">
+                  <ActionIcon
+                    variant="subtle"
+                    color="teal"
+                    size="md"
+                    onClick={() => handleDownloadPDF(app)}
+                  >
+                    <DownloadSimple size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </>
             )}
 
             {/* Assistant Actions: Forward for SUBMITTED apps */}
