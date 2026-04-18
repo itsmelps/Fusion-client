@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import {
@@ -16,6 +15,7 @@ import {
   FileInput,
   Stack,
   Divider,
+  Badge,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconUpload } from "@tabler/icons-react";
@@ -31,18 +31,37 @@ const SCHOLARSHIP_AWARD_MAP = {
   "Single Parent Scholarship": "Merit-cum-Means Scholarship",
 };
 
-function ScholarshipForm({ onCancel, onSubmitted, editData }) {
+/* ── Reusable section wrapper ──────────────────────────────────────── */
+function FormSection({ title, children }) {
+  return (
+    <Paper withBorder p="lg" radius="md" style={{ backgroundColor: "#FAFBFC" }}>
+      <Title order={5} mb="md" c="blue.7" fw={700}>
+        {title}
+      </Title>
+      {children}
+    </Paper>
+  );
+}
+
+FormSection.propTypes = {
+  title: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+};
+
+function ScholarshipForm({ onCancel, onSubmitted, editData, initialType }) {
   const user = useSelector((state) => state.user);
   const studentId = user?.username || user?.roll_no || "Student";
 
   const [submitting, setSubmitting] = useState(false);
 
   // ── Form state ────────────────────────────────────────────────────
-  // ── Form state ────────────────────────────────────────────────────
   const [category, setCategory] = useState(editData?.category || "");
   const [cpi, setCpi] = useState(editData?.cpi || "");
   const [scholarshipType, setScholarshipType] = useState(
-    editData?.scholarship_type || editData?.type_name || "",
+    editData?.scholarship_type ||
+      editData?.type_name ||
+      initialType ||
+      "Merit Cum Means Scholarship",
   );
   const [academicYear, setAcademicYear] = useState(
     editData?.academic_year || "2024-25",
@@ -59,7 +78,7 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
     editData?.father_occ_desc || "",
   );
   const [motherOcc, setMotherOcc] = useState(
-    editData?.mother_occ || "housewife",
+    editData?.mother_occ || "HOUSE_WIFE",
   );
   const [motherOccDesc, setMotherOccDesc] = useState(
     editData?.mother_occ_desc || "",
@@ -69,9 +88,9 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
     editData?.income_father || "",
   );
   const [incomeMother, setIncomeMother] = useState(
-    editData?.income_mother || "0",
+    editData?.income_mother || 0,
   );
-  const [incomeOther, setIncomeOther] = useState(editData?.income_other || "0");
+  const [incomeOther, setIncomeOther] = useState(editData?.income_other || 0);
 
   const [brotherName, setBrotherName] = useState(editData?.brother_name || "");
   const [brotherOccupation, setBrotherOccupation] = useState(
@@ -84,17 +103,17 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
 
   // -- Property --
   const [houseType, setHouseType] = useState(
-    editData?.house?.toLowerCase() || "owned",
+    editData?.house?.toUpperCase() || "OWNED",
   );
   const [plotArea, setPlotArea] = useState(editData?.plot_area || "");
   const [constructedArea, setConstructedArea] = useState(
     editData?.constructed_area || "",
   );
-  const [fourWheeler, setFourWheeler] = useState(editData?.four_wheeler || "");
+  const [fourWheeler, setFourWheeler] = useState(editData?.four_wheeler || 0);
   const [fourWheelerDesc, setFourWheelerDesc] = useState(
     editData?.four_wheeler_desc || "",
   );
-  const [twoWheeler, setTwoWheeler] = useState(editData?.two_wheeler || "");
+  const [twoWheeler, setTwoWheeler] = useState(editData?.two_wheeler || 0);
   const [twoWheelerDesc, setTwoWheelerDesc] = useState(
     editData?.two_wheeler_desc || "",
   );
@@ -119,18 +138,17 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
     { value: "business", label: "Business" },
     { value: "medical", label: "Medical" },
     { value: "consultant", label: "Consultant" },
-    { value: "pensioner", label: "Pensioner" },
-    { value: "other", label: "Other" },
+    { value: "pensioners", label: "Pensioner" },
   ];
 
   const motherOccOptions = [
-    ...fatherOccOptions,
-    { value: "housewife", label: "Housewife" },
+    { value: "EMPLOYED", label: "Employed" },
+    { value: "HOUSE_WIFE", label: "Housewife" },
   ];
 
   const houseOptions = [
-    { value: "owned", label: "Owned" },
-    { value: "rented", label: "Rented" },
+    { value: "OWNED", label: "Owned" },
+    { value: "RENTED", label: "Rented" },
   ];
 
   const categoryOptions = [
@@ -145,11 +163,15 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
       value: "Merit Cum Means Scholarship",
       label: "Merit Cum Means Scholarship",
     },
+    {
+      value: "Single Parent Scholarship",
+      label: "Single Parent Scholarship",
+    },
   ];
 
   const semesterOptions = Array.from({ length: 8 }, (_, i) => ({
     value: String(i + 1),
-    label: String(i + 1),
+    label: `Semester ${i + 1}`,
   }));
 
   // ── Validation ────────────────────────────────────────────────────
@@ -157,18 +179,28 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
     const e = {};
     if (!category) e.category = "Category is required";
     if (!cpi && cpi !== 0) e.cpi = "CPI is required";
+    if (cpi && (cpi < 0 || cpi > 10)) e.cpi = "CPI must be between 0 and 10";
     if (!scholarshipType) e.scholarshipType = "Scholarship type is required";
     if (!academicYear) e.academicYear = "Academic year is required";
     if (!semester) e.semester = "Semester is required";
     if (!incomeFather && incomeFather !== 0)
       e.incomeFather = "Father's income is required";
+    if (incomeFather && incomeFather < 0)
+      e.incomeFather = "Income cannot be negative";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   // ── Submit ────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!validate()) return;
+    if (!validate()) {
+      notifications.show({
+        title: "Validation Error",
+        message: "Please fill in all required fields correctly.",
+        color: "red",
+      });
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -200,13 +232,13 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
       formData.append("income_mother", incomeMother || 0);
       formData.append("income_other", incomeOther || 0);
 
-      formData.append("brother_name", brotherName);
-      formData.append("brother_occupation", brotherOccupation);
-      formData.append("sister_name", sisterName);
-      formData.append("sister_occupation", sisterOccupation);
+      formData.append("brother_name", brotherName || "N/A");
+      formData.append("brother_occupation", brotherOccupation || "N/A");
+      formData.append("sister_name", sisterName || "N/A");
+      formData.append("sister_occupation", sisterOccupation || "N/A");
 
       // Property & Vehicles
-      formData.append("house", houseType.toUpperCase());
+      formData.append("house", houseType);
       formData.append("plot_area", plotArea || 0);
       formData.append("constructed_area", constructedArea || 0);
       formData.append("four_wheeler", fourWheeler || 0);
@@ -235,7 +267,9 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
       if (response.ok) {
         notifications.show({
           title: "Success",
-          message: "Application submitted successfully!",
+          message: editData
+            ? "Application updated successfully!"
+            : "Application submitted successfully!",
           color: "green",
         });
         if (onSubmitted) onSubmitted();
@@ -273,49 +307,34 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
   };
 
   return (
-    <Container size="lg" mt="md" mb="xl" px={{ base: "md", sm: "xl" }}>
-      <Paper
-        radius="md"
-        p={{ base: "md", sm: "xl" }}
-        withBorder
-        shadow="sm"
-        style={{ maxWidth: 900, margin: "0 auto" }}
-      >
-        <Title order={3} mb={4} fw={800} style={{ letterSpacing: "-0.5px" }}>
-          {editData
-            ? "Edit Scholarship Application"
-            : "New Scholarship Application"}
-        </Title>
-        <Text size="sm" c="dimmed" mb="xl">
-          Applying as:{" "}
-          <Text component="span" fw={600} c="blue">
-            {studentId}
-          </Text>
-        </Text>
-
-        <Stack gap="xl">
-          {/* ── Category & Basic Info ─────────────────────────────── */}
-          <Paper
-            withBorder
-            p="md"
-            radius="md"
-            style={{ backgroundColor: "#fafafa" }}
-          >
-            <Title order={6} mb="md" tt="uppercase" c="dimmed" fw={700}>
-              Basic Information
+    <Container size="md" mt="md" mb="xl">
+      <Paper radius="md" p="xl" withBorder shadow="sm">
+        {/* ── Header ──────────────────────────────────────────────── */}
+        <Group justify="space-between" align="flex-start" mb="lg">
+          <div>
+            <Title order={3} fw={800} style={{ letterSpacing: "-0.5px" }}>
+              {editData
+                ? "Edit Scholarship Application"
+                : "New Scholarship Application"}
             </Title>
-            <Grid gutter="lg">
-              <Grid.Col span={{ base: 12, sm: 6 }}>
-                <Select
-                  label="Category"
-                  placeholder="Select your category"
-                  data={categoryOptions}
-                  value={category}
-                  onChange={setCategory}
-                  withAsterisk
-                  error={errors.category}
-                />
-              </Grid.Col>
+            <Text size="sm" c="dimmed" mt={4}>
+              Applying as{" "}
+              <Text component="span" fw={600} c="blue">
+                {studentId}
+              </Text>
+            </Text>
+          </div>
+          {editData && (
+            <Badge color="yellow" variant="light" size="lg">
+              Editing
+            </Badge>
+          )}
+        </Group>
+
+        <Stack gap="lg">
+          {/* ── Section 1: Basic Information ───────────────────────── */}
+          <FormSection title="1. Basic Information">
+            <Grid gutter="md">
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Select
                   label="Scholarship Type"
@@ -328,6 +347,17 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
                 />
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Select
+                  label="Category"
+                  placeholder="Select your category"
+                  data={categoryOptions}
+                  value={category}
+                  onChange={setCategory}
+                  withAsterisk
+                  error={errors.category}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
                 <NumberInput
                   label="CPI"
                   placeholder="e.g. 8.5"
@@ -341,15 +371,33 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
                   decimalScale={2}
                 />
               </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <TextInput
+                  label="Academic Year"
+                  placeholder="2024-25"
+                  value={academicYear}
+                  onChange={(e) => setAcademicYear(e.target.value)}
+                  withAsterisk
+                  error={errors.academicYear}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <Select
+                  label="Semester"
+                  placeholder="Select semester"
+                  data={semesterOptions}
+                  value={semester}
+                  onChange={setSemester}
+                  withAsterisk
+                  error={errors.semester}
+                />
+              </Grid.Col>
             </Grid>
-          </Paper>
+          </FormSection>
 
-          {/* ── Income Details ────────────────────────────────────── */}
-          <section>
-            <Title order={5} mb="md" fw={700}>
-              Income Details
-            </Title>
-            <Grid gutter="lg">
+          {/* ── Section 2: Family Income ───────────────────────────── */}
+          <FormSection title="2. Family Income Details">
+            <Grid gutter="md">
               <Grid.Col span={{ base: 12, sm: 4 }}>
                 <NumberInput
                   label="Father's Annual Income (₹)"
@@ -359,35 +407,35 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
                   withAsterisk
                   error={errors.incomeFather}
                   min={0}
+                  thousandSeparator=","
                 />
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 4 }}>
                 <NumberInput
                   label="Mother's Annual Income (₹)"
+                  placeholder="e.g. 0"
                   value={incomeMother}
                   onChange={setIncomeMother}
                   min={0}
+                  thousandSeparator=","
                 />
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 4 }}>
                 <NumberInput
                   label="Other Source Income (₹)"
+                  placeholder="e.g. 0"
                   value={incomeOther}
                   onChange={setIncomeOther}
                   min={0}
+                  thousandSeparator=","
                 />
               </Grid.Col>
             </Grid>
-          </section>
+          </FormSection>
 
-          <Divider />
-
-          {/* ── Occupation Details ─────────────────────────────────── */}
-          <section>
-            <Title order={5} mb="md" fw={700}>
-              Occupation Details
-            </Title>
-            <Grid gutter="lg">
+          {/* ── Section 3: Parent Occupation ───────────────────────── */}
+          <FormSection title="3. Parent Occupation">
+            <Grid gutter="md">
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Select
                   label="Father's Occupation"
@@ -398,8 +446,8 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
-                  label="Father's Occupation Description"
-                  placeholder="Company name, rank, etc."
+                  label="Father's Occupation Details"
+                  placeholder="Company name, role, etc."
                   value={fatherOccDesc}
                   onChange={(e) => setFatherOccDesc(e.target.value)}
                 />
@@ -414,26 +462,22 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
-                  label="Mother's Occupation Description"
-                  placeholder="Role details if any"
+                  label="Mother's Occupation Details"
+                  placeholder="Role details if applicable"
                   value={motherOccDesc}
                   onChange={(e) => setMotherOccDesc(e.target.value)}
                 />
               </Grid.Col>
             </Grid>
-          </section>
+          </FormSection>
 
-          <Divider />
-
-          {/* ── Siblings Details ───────────────────────────────────── */}
-          <section>
-            <Title order={5} mb="md" fw={700}>
-              Siblings Details
-            </Title>
-            <Grid gutter="lg">
+          {/* ── Section 4: Siblings ────────────────────────────────── */}
+          <FormSection title="4. Siblings Information">
+            <Grid gutter="md">
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
                   label="Brother's Name"
+                  placeholder="Enter name or N/A"
                   value={brotherName}
                   onChange={(e) => setBrotherName(e.target.value)}
                 />
@@ -441,6 +485,7 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
                   label="Brother's Occupation"
+                  placeholder="Student, Working, etc."
                   value={brotherOccupation}
                   onChange={(e) => setBrotherOccupation(e.target.value)}
                 />
@@ -448,6 +493,7 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
                   label="Sister's Name"
+                  placeholder="Enter name or N/A"
                   value={sisterName}
                   onChange={(e) => setSisterName(e.target.value)}
                 />
@@ -455,21 +501,17 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
                   label="Sister's Occupation"
+                  placeholder="Student, Working, etc."
                   value={sisterOccupation}
                   onChange={(e) => setSisterOccupation(e.target.value)}
                 />
               </Grid.Col>
             </Grid>
-          </section>
+          </FormSection>
 
-          <Divider />
-
-          {/* ── Property & Vehicles ────────────────────────────────── */}
-          <section>
-            <Title order={5} mb="md" fw={700}>
-              Property & Assets
-            </Title>
-            <Grid gutter="lg">
+          {/* ── Section 5: Property & Assets ───────────────────────── */}
+          <FormSection title="5. Property & Assets">
+            <Grid gutter="md">
               <Grid.Col span={{ base: 12, sm: 4 }}>
                 <Select
                   label="House Type"
@@ -481,6 +523,7 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
               <Grid.Col span={{ base: 12, sm: 4 }}>
                 <NumberInput
                   label="Plot Area (sq ft)"
+                  placeholder="e.g. 1200"
                   value={plotArea}
                   onChange={setPlotArea}
                   min={0}
@@ -489,157 +532,170 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
               <Grid.Col span={{ base: 12, sm: 4 }}>
                 <NumberInput
                   label="Constructed Area (sq ft)"
+                  placeholder="e.g. 800"
                   value={constructedArea}
                   onChange={setConstructedArea}
                   min={0}
                 />
               </Grid.Col>
 
-              <Grid.Col span={{ base: 12, sm: 6 }}>
+              <Grid.Col span={12}>
+                <Divider
+                  label="Vehicles"
+                  labelPosition="left"
+                  my="xs"
+                  color="gray.3"
+                />
+              </Grid.Col>
+
+              <Grid.Col span={{ base: 12, sm: 3 }}>
                 <NumberInput
-                  label="Four Wheeler Count"
+                  label="Four Wheelers"
                   value={fourWheeler}
                   onChange={setFourWheeler}
                   min={0}
                 />
               </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6 }}>
+              <Grid.Col span={{ base: 12, sm: 9 }}>
                 <TextInput
-                  label="Four Wheeler Description"
-                  placeholder="Model, Year"
+                  label="Four Wheeler Details"
+                  placeholder="Make, Model, Year"
                   value={fourWheelerDesc}
                   onChange={(e) => setFourWheelerDesc(e.target.value)}
                 />
               </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6 }}>
+              <Grid.Col span={{ base: 12, sm: 3 }}>
                 <NumberInput
-                  label="Two Wheeler Count"
+                  label="Two Wheelers"
                   value={twoWheeler}
                   onChange={setTwoWheeler}
                   min={0}
                 />
               </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6 }}>
+              <Grid.Col span={{ base: 12, sm: 9 }}>
                 <TextInput
-                  label="Two Wheeler Description"
-                  placeholder="Make, Year"
+                  label="Two Wheeler Details"
+                  placeholder="Make, Model, Year"
                   value={twoWheelerDesc}
                   onChange={(e) => setTwoWheelerDesc(e.target.value)}
                 />
               </Grid.Col>
             </Grid>
-          </section>
+          </FormSection>
 
-          <Divider />
-
-          {/* ── Education & Bank ───────────────────────────────────── */}
-          <section>
-            <Title order={5} mb="md" fw={700}>
-              Education & Financials
-            </Title>
-            <Grid gutter="lg">
+          {/* ── Section 6: Education & Bank ────────────────────────── */}
+          <FormSection title="6. Education & Loan Details">
+            <Grid gutter="md">
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
-                  label="School Name"
+                  label="Previous School Name"
+                  placeholder="e.g. Delhi Public School"
                   value={schoolName}
                   onChange={(e) => setSchoolName(e.target.value)}
                 />
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <NumberInput
-                  label="School Fee (Annual)"
+                  label="School Annual Fee (₹)"
+                  placeholder="e.g. 50000"
                   value={schoolFee}
                   onChange={setSchoolFee}
                   min={0}
+                  thousandSeparator=","
                 />
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <TextInput
+                  label="College Name"
+                  value={collegeName}
+                  onChange={(e) => setCollegeName(e.target.value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <NumberInput
+                  label="College Annual Fee (₹)"
+                  placeholder="e.g. 90250"
+                  value={collegeFee}
+                  onChange={setCollegeFee}
+                  min={0}
+                  thousandSeparator=","
+                />
+              </Grid.Col>
+
+              <Grid.Col span={12}>
+                <Divider
+                  label="Education Loan"
+                  labelPosition="left"
+                  my="xs"
+                  color="gray.3"
+                />
+              </Grid.Col>
+
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
                   label="Bank Name"
-                  placeholder="e.g. SBI"
+                  placeholder="e.g. State Bank of India"
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
                 />
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6 }}>
                 <NumberInput
-                  label="Educational Loan Amount (₹)"
+                  label="Loan Amount (₹)"
+                  placeholder="e.g. 200000"
                   value={loanAmount}
                   onChange={setLoanAmount}
                   min={0}
+                  thousandSeparator=","
                 />
               </Grid.Col>
             </Grid>
-          </section>
+          </FormSection>
 
-          {/* ── Submission Metadata ────────────────────────────────── */}
-          <Paper
-            withBorder
-            p="md"
-            radius="md"
-            style={{ borderStyle: "dashed" }}
-          >
-            <Grid gutter="lg">
-              <Grid.Col span={{ base: 12, sm: 6 }}>
-                <TextInput
-                  label="Academic Year"
-                  placeholder="2024-25"
-                  value={academicYear}
-                  onChange={(e) => setAcademicYear(e.target.value)}
-                  withAsterisk
-                  error={errors.academicYear}
+          {/* ── Section 7: Documents & Remarks ────────────────────── */}
+          <FormSection title="7. Documents & Remarks">
+            <Grid gutter="md">
+              <Grid.Col span={12}>
+                <FileInput
+                  label="Income Certificate / Supporting Document"
+                  description="Upload PDF, DOC, or image files (max 5MB)"
+                  placeholder="Click to select file"
+                  leftSection={<IconUpload size={16} />}
+                  value={document}
+                  onChange={setDocument}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                 />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6 }}>
-                <Select
-                  label="Semester"
-                  placeholder="Select semester"
-                  data={semesterOptions}
-                  value={semester}
-                  onChange={setSemester}
-                  withAsterisk
-                  error={errors.semester}
-                />
+                {editData?.income_certificate && !document && (
+                  <Text size="xs" mt="xs" c="blue">
+                    📎 Existing document on file.{" "}
+                    <a
+                      href={editData.income_certificate}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontWeight: 600, color: "inherit" }}
+                    >
+                      View current
+                    </a>
+                  </Text>
+                )}
               </Grid.Col>
               <Grid.Col span={12}>
                 <Textarea
                   label="Additional Remarks"
-                  placeholder="Any other details you want to provide..."
+                  placeholder="Any other relevant details you wish to provide..."
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   minRows={3}
+                  maxRows={6}
+                  autosize
                 />
               </Grid.Col>
             </Grid>
-          </Paper>
-
-          {/* ── Document Upload ────────────────────────────────────── */}
-          <section>
-            <FileInput
-              label="Income Certificate / Supporting Documents"
-              placeholder="Select PDF or Image"
-              leftSection={<IconUpload size={16} />}
-              value={document}
-              onChange={setDocument}
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-            />
-            {editData?.income_certificate && (
-              <Text size="sm" mt="xs" c="blue">
-                Current Document:{" "}
-                <a
-                  href={editData.income_certificate}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ fontWeight: 600, color: "inherit" }}
-                >
-                  View Details
-                </a>
-              </Text>
-            )}
-          </section>
+          </FormSection>
 
           {/* ── Actions ────────────────────────────────────────────── */}
-          <Group justify="flex-end" gap="md" mt="xl">
+          <Divider />
+          <Group justify="flex-end" gap="md">
             <Button variant="subtle" color="gray" onClick={onCancel} size="md">
               Cancel
             </Button>
@@ -650,16 +706,9 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
               size="md"
               radius="md"
               style={{
-                paddingLeft: 40,
-                paddingRight: 40,
+                paddingLeft: 32,
+                paddingRight: 32,
                 fontWeight: 600,
-                boxShadow: "0 4px 12px rgba(34, 139, 230, 0.25)",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
               }}
             >
               {editData ? "Update Application" : "Submit Application"}
@@ -674,6 +723,7 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
 ScholarshipForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   onSubmitted: PropTypes.func,
+  initialType: PropTypes.string,
   editData: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     category: PropTypes.string,
