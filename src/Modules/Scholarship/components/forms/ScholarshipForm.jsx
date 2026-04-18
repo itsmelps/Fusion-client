@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import {
   Button,
@@ -18,6 +18,7 @@ import {
 import { notifications } from "@mantine/notifications";
 import { IconUpload } from "@tabler/icons-react";
 import PropTypes from "prop-types";
+import { fetchAwards, fetchMCMStatus } from "../../services/api";
 import { submitMCMApplicationsRoute } from "../../../../routes/SPACSRoutes";
 
 const SCHOLARSHIP_AWARD_MAP = {
@@ -39,10 +40,7 @@ export default function ScholarshipForm({
   const [category, setCategory] = useState(editData?.category || "");
   const [cpi, setCpi] = useState(editData?.cpi || "");
   const [scholarshipType, setScholarshipType] = useState(
-    editData?.scholarship_type ||
-      editData?.type_name ||
-      initialType ||
-      "Merit Cum Means Scholarship",
+    editData?.scholarship_type || editData?.type_name || initialType || "",
   );
   const [academicYear, setAcademicYear] = useState(
     editData?.academic_year || "2024-25",
@@ -109,13 +107,50 @@ export default function ScholarshipForm({
     { value: "GEN", label: "General" },
   ];
 
-  const scholarshipOptions = [
+  const [availableAwards, setAvailableAwards] = useState([]);
+  const [existingApplications, setExistingApplications] = useState([]);
+
+  useEffect(() => {
+    const initForm = async () => {
+      try {
+        const [awardsData, appsData] = await Promise.all([
+          fetchAwards(),
+          fetchMCMStatus(),
+        ]);
+        setAvailableAwards(awardsData || []);
+        setExistingApplications(appsData || []);
+      } catch (err) {
+        console.error("Failed to fetch initial form data:", err);
+      }
+    };
+    initForm();
+  }, []);
+
+  const activeApplications = existingApplications.filter(
+    (app) =>
+      app.status &&
+      !["WITHDRAWN", "REJECTED", "REJECT"].includes(app.status.toUpperCase()),
+  );
+
+  const activeBackendNames = activeApplications.map((app) => app.type_name);
+
+  const baseOptions = [
     {
       value: "Merit Cum Means Scholarship",
       label: "Merit Cum Means Scholarship",
+      backendName: "Merit-cum-Means Scholarship",
     },
-    { value: "Single Parent Scholarship", label: "Single Parent Scholarship" },
+    {
+      value: "Single Parent Scholarship",
+      label: "Single Parent Scholarship",
+      backendName: "Merit-cum-Means Scholarship",
+    },
   ];
+
+  const scholarshipOptions = baseOptions.filter((opt) => {
+    if (editData) return true;
+    return !activeBackendNames.includes(opt.backendName);
+  });
 
   const validate = () => {
     const e = {};
@@ -123,10 +158,48 @@ export default function ScholarshipForm({
     if (!cpi && cpi !== 0) e.cpi = "Required";
     if (cpi && (cpi < 0 || cpi > 10)) e.cpi = "Invalid CPI";
     if (!scholarshipType) e.scholarshipType = "Required";
+
+    // Duplicate check
+    const selectedOpt = baseOptions.find((o) => o.value === scholarshipType);
+    if (
+      !editData &&
+      selectedOpt &&
+      activeBackendNames.includes(selectedOpt.backendName)
+    ) {
+      e.scholarshipType =
+        "You have already submitted an application for this scholarship.";
+    }
+
     if (!academicYear) e.academicYear = "Required";
     if (!semester) e.semester = "Required";
     if (!incomeFather && incomeFather !== 0) e.incomeFather = "Required";
     if (incomeFather && incomeFather < 0) e.incomeFather = "Invalid amount";
+
+    // Eligibility check
+    const bName =
+      selectedOpt?.backendName ||
+      SCHOLARSHIP_AWARD_MAP[scholarshipType] ||
+      scholarshipType;
+    const awardRules = availableAwards.find((a) => a.award_name === bName);
+    if (awardRules) {
+      if (
+        awardRules.cpi_cutoff > 0 &&
+        parseFloat(cpi) < awardRules.cpi_cutoff
+      ) {
+        e.cpi = `Must be at least ${awardRules.cpi_cutoff} for this scholarship.`;
+      }
+      const totalFamIncome =
+        parseInt(incomeFather || 0, 10) +
+        parseInt(incomeMother || 0, 10) +
+        parseInt(incomeOther || 0, 10);
+      if (
+        awardRules.income_ceiling > 0 &&
+        totalFamIncome > awardRules.income_ceiling
+      ) {
+        e.incomeFather = `Total family income (₹${totalFamIncome}) exceeds ceiling of ₹${awardRules.income_ceiling}.`;
+      }
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };

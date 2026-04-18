@@ -11,7 +11,7 @@ import {
 } from "@mantine/core";
 import { Eye, PaperPlaneTilt } from "@phosphor-icons/react";
 import PropTypes from "prop-types";
-import { fetchAwards } from "../../services/api";
+import { fetchAwards, fetchMCMStatus } from "../../services/api";
 
 /* ── Static fallback data matching the reference images ─────────────── */
 const FALLBACK_SCHOLARSHIPS = [
@@ -42,24 +42,36 @@ function ScholarshipTypesTable({ onApply }) {
   const isStudent = role === "student";
   const [scholarships, setScholarships] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [appliedAwardNames, setAppliedAwardNames] = useState([]);
 
   useEffect(() => {
     const getData = async () => {
       try {
-        const data = await fetchAwards();
-        // Any award marked live that doesn't say "Medal" should be treated as a scholarship here
-        const filtered = data.filter((a) => {
+        const [awardsData, appsData] = await Promise.all([
+          fetchAwards(),
+          fetchMCMStatus(),
+        ]);
+
+        const activeApps = (appsData || []).filter(
+          (app) =>
+            app.status &&
+            !["WITHDRAWN", "REJECTED", "REJECT"].includes(
+              app.status.toUpperCase(),
+            ),
+        );
+        setAppliedAwardNames(activeApps.map((a) => a.type_name));
+
+        const filtered = awardsData.filter((a) => {
           if (!a.publish_flag) return false;
           const n = (a.award_name || "").toLowerCase();
-          // Exclude medals/prizes (they go to AwardsTable)
-          return !(
-            n.includes("medal") ||
-            n.includes("prize") ||
-            n.includes("award")
+          // ONLY allow MCM and Single Parent as requested by user
+          return (
+            n.includes("merit-cum-means") ||
+            n.includes("single parent") ||
+            n.includes("mcm")
           );
         });
 
-        // Map to consistent shape
         const mapped = filtered.map((a) => {
           const n = (a.award_name || "").toLowerCase();
           const isMerit = n.includes("mcm") || n.includes("merit");
@@ -68,6 +80,7 @@ function ScholarshipTypesTable({ onApply }) {
           return {
             id: a.id,
             award_name: a.award_name,
+            backendName: "Merit-cum-Means Scholarship", // Both map to this in backend
             category: isMerit
               ? "MERIT-BASED"
               : isSingleParent
@@ -80,7 +93,15 @@ function ScholarshipTypesTable({ onApply }) {
             income_limit: a.income_ceiling || (isMerit ? 800000 : 500000),
           };
         });
-        setScholarships(mapped.length > 0 ? mapped : FALLBACK_SCHOLARSHIPS);
+        setScholarships(
+          mapped.length > 0
+            ? mapped
+            : FALLBACK_SCHOLARSHIPS.filter(
+                (s) =>
+                  s.award_name.toLowerCase().includes("merit") ||
+                  s.award_name.toLowerCase().includes("single parent"),
+              ),
+        );
       } catch (err) {
         console.error("Failed to fetch scholarships:", err);
         setScholarships(FALLBACK_SCHOLARSHIPS);
@@ -137,12 +158,25 @@ function ScholarshipTypesTable({ onApply }) {
             </ActionIcon>
           </Tooltip>
           {isStudent && (
-            <Tooltip label="Apply for Scholarship">
+            <Tooltip
+              label={
+                appliedAwardNames.includes(s.backendName)
+                  ? "Already Applied"
+                  : "Apply for Scholarship"
+              }
+            >
               <ActionIcon
                 variant="subtle"
-                color="blue"
+                color={
+                  appliedAwardNames.includes(s.backendName) ? "gray" : "blue"
+                }
                 size="md"
-                onClick={() => onApply && onApply(s)}
+                onClick={() =>
+                  !appliedAwardNames.includes(s.backendName) &&
+                  onApply &&
+                  onApply(s)
+                }
+                disabled={appliedAwardNames.includes(s.backendName)}
               >
                 <PaperPlaneTilt size={18} />
               </ActionIcon>
