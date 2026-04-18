@@ -14,6 +14,8 @@ import {
   NumberInput,
   Textarea,
   FileInput,
+  Stack,
+  Divider,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconUpload } from "@tabler/icons-react";
@@ -178,6 +180,10 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
       formData.append("award", backendAwardName);
       formData.append("award_type", backendAwardName);
 
+      if (editData?.id) {
+        formData.append("application_id", editData.id);
+      }
+
       // Core details
       formData.append("category", category);
       formData.append("cpi", cpi);
@@ -275,342 +281,391 @@ function ScholarshipForm({ onCancel, onSubmitted, editData }) {
         shadow="sm"
         style={{ maxWidth: 900, margin: "0 auto" }}
       >
-        <Title order={3} mb={4} fw={700}>
-          New Scholarship Application
+        <Title order={3} mb={4} fw={800} style={{ letterSpacing: "-0.5px" }}>
+          {editData
+            ? "Edit Scholarship Application"
+            : "New Scholarship Application"}
         </Title>
-        <Text size="sm" c="dimmed" mb="lg">
-          Applying as: {studentId}
+        <Text size="sm" c="dimmed" mb="xl">
+          Applying as:{" "}
+          <Text component="span" fw={600} c="blue">
+            {studentId}
+          </Text>
         </Text>
 
-        {/* ── Category ─────────────────────────────────────────────── */}
-        <Select
-          label="Category"
-          placeholder="Select your category"
-          data={categoryOptions}
-          value={category}
-          onChange={setCategory}
-          withAsterisk
-          error={errors.category}
-          mb="lg"
-          styles={{
-            input: { height: 42 },
-          }}
-        />
+        <Stack gap="xl">
+          {/* ── Category & Basic Info ─────────────────────────────── */}
+          <Paper
+            withBorder
+            p="md"
+            radius="md"
+            style={{ backgroundColor: "#fafafa" }}
+          >
+            <Title order={6} mb="md" tt="uppercase" c="dimmed" fw={700}>
+              Basic Information
+            </Title>
+            <Grid gutter="lg">
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Select
+                  label="Category"
+                  placeholder="Select your category"
+                  data={categoryOptions}
+                  value={category}
+                  onChange={setCategory}
+                  withAsterisk
+                  error={errors.category}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Select
+                  label="Scholarship Type"
+                  placeholder="Select type"
+                  data={scholarshipOptions}
+                  value={scholarshipType}
+                  onChange={setScholarshipType}
+                  withAsterisk
+                  error={errors.scholarshipType}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <NumberInput
+                  label="CPI"
+                  placeholder="e.g. 8.5"
+                  value={cpi}
+                  onChange={setCpi}
+                  withAsterisk
+                  error={errors.cpi}
+                  min={0}
+                  max={10}
+                  step={0.1}
+                  decimalScale={2}
+                />
+              </Grid.Col>
+            </Grid>
+          </Paper>
 
-        {/* ── CPI + Family Income ─────────────────────────── */}
-        <Group grow mb="lg" align="flex-start">
-          <NumberInput
-            label="CPI"
-            placeholder="e.g. 8.5"
-            value={cpi}
-            onChange={setCpi}
-            withAsterisk
-            error={errors.cpi}
-            min={0}
-            max={10}
-            step={0.1}
-            decimalScale={2}
-          />
-          <NumberInput
-            label="Father's Annual Income (₹)"
-            placeholder="e.g. 300000"
-            value={incomeFather}
-            onChange={setIncomeFather}
-            withAsterisk
-            error={errors.incomeFather}
-            min={0}
-          />
-        </Group>
+          {/* ── Income Details ────────────────────────────────────── */}
+          <section>
+            <Title order={5} mb="md" fw={700}>
+              Income Details
+            </Title>
+            <Grid gutter="lg">
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <NumberInput
+                  label="Father's Annual Income (₹)"
+                  placeholder="e.g. 300000"
+                  value={incomeFather}
+                  onChange={setIncomeFather}
+                  withAsterisk
+                  error={errors.incomeFather}
+                  min={0}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <NumberInput
+                  label="Mother's Annual Income (₹)"
+                  value={incomeMother}
+                  onChange={setIncomeMother}
+                  min={0}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <NumberInput
+                  label="Other Source Income (₹)"
+                  value={incomeOther}
+                  onChange={setIncomeOther}
+                  min={0}
+                />
+              </Grid.Col>
+            </Grid>
+          </section>
 
-        <Group grow mb="lg" align="flex-start">
-          <NumberInput
-            label="Mother's Annual Income (₹)"
-            value={incomeMother}
-            onChange={setIncomeMother}
-            min={0}
-          />
-          <NumberInput
-            label="Other Source Income (₹)"
-            value={incomeOther}
-            onChange={setIncomeOther}
-            min={0}
-          />
-        </Group>
+          <Divider />
 
-        {/* ── Scholarship Type ─────────────────────────────────────── */}
-        <Select
-          label="Scholarship Type"
-          placeholder="Select scholarship type"
-          data={scholarshipOptions}
-          value={scholarshipType}
-          onChange={setScholarshipType}
-          withAsterisk
-          error={errors.scholarshipType}
-          mb="lg"
-        />
+          {/* ── Occupation Details ─────────────────────────────────── */}
+          <section>
+            <Title order={5} mb="md" fw={700}>
+              Occupation Details
+            </Title>
+            <Grid gutter="lg">
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Select
+                  label="Father's Occupation"
+                  data={fatherOccOptions}
+                  value={fatherOcc}
+                  onChange={setFatherOcc}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Father's Occupation Description"
+                  placeholder="Company name, rank, etc."
+                  value={fatherOccDesc}
+                  onChange={(e) => setFatherOccDesc(e.target.value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Select
+                  label="Mother's Occupation"
+                  data={motherOccOptions}
+                  value={motherOcc}
+                  onChange={setMotherOcc}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Mother's Occupation Description"
+                  placeholder="Role details if any"
+                  value={motherOccDesc}
+                  onChange={(e) => setMotherOccDesc(e.target.value)}
+                />
+              </Grid.Col>
+            </Grid>
+          </section>
 
-        {/* ── Occupation Details ───────────────────────────────────── */}
-        <Title order={5} mb="sm" mt="md">
-          Occupation Details
-        </Title>
-        <Grid mb="lg">
-          <Grid.Col span={6}>
-            <Select
-              label="Father's Occupation"
-              data={fatherOccOptions}
-              value={fatherOcc}
-              onChange={setFatherOcc}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Father's Occupation Description"
-              value={fatherOccDesc}
-              onChange={(e) => setFatherOccDesc(e.target.value)}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <Select
-              label="Mother's Occupation"
-              data={motherOccOptions}
-              value={motherOcc}
-              onChange={setMotherOcc}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Mother's Occupation Description"
-              value={motherOccDesc}
-              onChange={(e) => setMotherOccDesc(e.target.value)}
-            />
-          </Grid.Col>
-        </Grid>
+          <Divider />
 
-        {/* ── Siblings Details ─────────────────────────────────────── */}
-        <Title order={5} mb="sm" mt="md">
-          Siblings Details
-        </Title>
-        <Grid mb="lg">
-          <Grid.Col span={6}>
-            <TextInput
-              label="Brother's Name"
-              value={brotherName}
-              onChange={(e) => setBrotherName(e.target.value)}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Brother's Occupation"
-              value={brotherOccupation}
-              onChange={(e) => setBrotherOccupation(e.target.value)}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Sister's Name"
-              value={sisterName}
-              onChange={(e) => setSisterName(e.target.value)}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Sister's Occupation"
-              value={sisterOccupation}
-              onChange={(e) => setSisterOccupation(e.target.value)}
-            />
-          </Grid.Col>
-        </Grid>
+          {/* ── Siblings Details ───────────────────────────────────── */}
+          <section>
+            <Title order={5} mb="md" fw={700}>
+              Siblings Details
+            </Title>
+            <Grid gutter="lg">
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Brother's Name"
+                  value={brotherName}
+                  onChange={(e) => setBrotherName(e.target.value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Brother's Occupation"
+                  value={brotherOccupation}
+                  onChange={(e) => setBrotherOccupation(e.target.value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Sister's Name"
+                  value={sisterName}
+                  onChange={(e) => setSisterName(e.target.value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Sister's Occupation"
+                  value={sisterOccupation}
+                  onChange={(e) => setSisterOccupation(e.target.value)}
+                />
+              </Grid.Col>
+            </Grid>
+          </section>
 
-        {/* ── Property & Vehicles ──────────────────────────────────── */}
-        <Title order={5} mb="sm" mt="md">
-          Property & Assets
-        </Title>
-        <Grid mb="lg">
-          <Grid.Col span={4}>
-            <Select
-              label="House"
-              data={houseOptions}
-              value={houseType}
-              onChange={setHouseType}
-            />
-          </Grid.Col>
-          <Grid.Col span={4}>
-            <NumberInput
-              label="Plot Area (sq ft)"
-              value={plotArea}
-              onChange={setPlotArea}
-            />
-          </Grid.Col>
-          <Grid.Col span={4}>
-            <NumberInput
-              label="Constructed Area (sq ft)"
-              value={constructedArea}
-              onChange={setConstructedArea}
-            />
-          </Grid.Col>
+          <Divider />
 
-          <Grid.Col span={6}>
-            <NumberInput
-              label="Four Wheeler Count"
-              value={fourWheeler}
-              onChange={setFourWheeler}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Four Wheeler Description"
-              value={fourWheelerDesc}
-              onChange={(e) => setFourWheelerDesc(e.target.value)}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <NumberInput
-              label="Two Wheeler Count"
-              value={twoWheeler}
-              onChange={setTwoWheeler}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Two Wheeler Description"
-              value={twoWheelerDesc}
-              onChange={(e) => setTwoWheelerDesc(e.target.value)}
-            />
-          </Grid.Col>
-        </Grid>
+          {/* ── Property & Vehicles ────────────────────────────────── */}
+          <section>
+            <Title order={5} mb="md" fw={700}>
+              Property & Assets
+            </Title>
+            <Grid gutter="lg">
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <Select
+                  label="House Type"
+                  data={houseOptions}
+                  value={houseType}
+                  onChange={setHouseType}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <NumberInput
+                  label="Plot Area (sq ft)"
+                  value={plotArea}
+                  onChange={setPlotArea}
+                  min={0}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <NumberInput
+                  label="Constructed Area (sq ft)"
+                  value={constructedArea}
+                  onChange={setConstructedArea}
+                  min={0}
+                />
+              </Grid.Col>
 
-        {/* ── Education & Bank ─────────────────────────────────────── */}
-        <Title order={5} mb="sm" mt="md">
-          Education & Financials
-        </Title>
-        <Grid mb="lg">
-          <Grid.Col span={6}>
-            <TextInput
-              label="School Name"
-              value={schoolName}
-              onChange={(e) => setSchoolName(e.target.value)}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <NumberInput
-              label="School Fee"
-              value={schoolFee}
-              onChange={setSchoolFee}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <TextInput
-              label="Bank Name"
-              value={bankName}
-              onChange={(e) => setBankName(e.target.value)}
-            />
-          </Grid.Col>
-          <Grid.Col span={6}>
-            <NumberInput
-              label="Loan Amount (₹)"
-              value={loanAmount}
-              onChange={setLoanAmount}
-            />
-          </Grid.Col>
-        </Grid>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <NumberInput
+                  label="Four Wheeler Count"
+                  value={fourWheeler}
+                  onChange={setFourWheeler}
+                  min={0}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Four Wheeler Description"
+                  placeholder="Model, Year"
+                  value={fourWheelerDesc}
+                  onChange={(e) => setFourWheelerDesc(e.target.value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <NumberInput
+                  label="Two Wheeler Count"
+                  value={twoWheeler}
+                  onChange={setTwoWheeler}
+                  min={0}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Two Wheeler Description"
+                  placeholder="Make, Year"
+                  value={twoWheelerDesc}
+                  onChange={(e) => setTwoWheelerDesc(e.target.value)}
+                />
+              </Grid.Col>
+            </Grid>
+          </section>
 
-        {/* ── Academic Year + Semester ──────────────────────────────── */}
-        <Group grow mb="lg" align="flex-start">
-          <TextInput
-            label="Academic Year"
-            placeholder="2024-25"
-            value={academicYear}
-            onChange={(e) => setAcademicYear(e.target.value)}
-            withAsterisk
-            error={errors.academicYear}
-            styles={{
-              input: { height: 42 },
-            }}
-          />
-          <Select
-            label="Semester"
-            placeholder=""
-            data={semesterOptions}
-            value={semester}
-            onChange={setSemester}
-            withAsterisk
-            error={errors.semester}
-            styles={{
-              input: { height: 42 },
-            }}
-          />
-        </Group>
+          <Divider />
 
-        {/* ── Remarks ──────────────────────────────────────────────── */}
-        <Textarea
-          label="Remarks"
-          value={remarks}
-          onChange={(e) => setRemarks(e.target.value)}
-          minRows={3}
-          mb="lg"
-          styles={{
-            input: { minHeight: 80 },
-          }}
-        />
+          {/* ── Education & Bank ───────────────────────────────────── */}
+          <section>
+            <Title order={5} mb="md" fw={700}>
+              Education & Financials
+            </Title>
+            <Grid gutter="lg">
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="School Name"
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <NumberInput
+                  label="School Fee (Annual)"
+                  value={schoolFee}
+                  onChange={setSchoolFee}
+                  min={0}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Bank Name"
+                  placeholder="e.g. SBI"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <NumberInput
+                  label="Educational Loan Amount (₹)"
+                  value={loanAmount}
+                  onChange={setLoanAmount}
+                  min={0}
+                />
+              </Grid.Col>
+            </Grid>
+          </section>
 
-        {/* ── Document Upload ──────────────────────────────────────── */}
-        <FileInput
-          label="Additional Supporting Documents (Optional)"
-          placeholder="Upload a document if requested"
-          leftSection={<IconUpload size={16} />}
-          value={document}
-          onChange={setDocument}
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-          mb="xl"
-          styles={{
-            input: { height: 42 },
-          }}
-        />
-        {editData?.income_certificate && (
-          <Text size="sm" mt="-md" mb="xl">
-            Current Document:{" "}
-            <a
-              href={editData.income_certificate}
-              target="_blank"
-              rel="noreferrer"
+          {/* ── Submission Metadata ────────────────────────────────── */}
+          <Paper
+            withBorder
+            p="md"
+            radius="md"
+            style={{ borderStyle: "dashed" }}
+          >
+            <Grid gutter="lg">
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <TextInput
+                  label="Academic Year"
+                  placeholder="2024-25"
+                  value={academicYear}
+                  onChange={(e) => setAcademicYear(e.target.value)}
+                  withAsterisk
+                  error={errors.academicYear}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Select
+                  label="Semester"
+                  placeholder="Select semester"
+                  data={semesterOptions}
+                  value={semester}
+                  onChange={setSemester}
+                  withAsterisk
+                  error={errors.semester}
+                />
+              </Grid.Col>
+              <Grid.Col span={12}>
+                <Textarea
+                  label="Additional Remarks"
+                  placeholder="Any other details you want to provide..."
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  minRows={3}
+                />
+              </Grid.Col>
+            </Grid>
+          </Paper>
+
+          {/* ── Document Upload ────────────────────────────────────── */}
+          <section>
+            <FileInput
+              label="Income Certificate / Supporting Documents"
+              placeholder="Select PDF or Image"
+              leftSection={<IconUpload size={16} />}
+              value={document}
+              onChange={setDocument}
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+            {editData?.income_certificate && (
+              <Text size="sm" mt="xs" c="blue">
+                Current Document:{" "}
+                <a
+                  href={editData.income_certificate}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontWeight: 600, color: "inherit" }}
+                >
+                  View Details
+                </a>
+              </Text>
+            )}
+          </section>
+
+          {/* ── Actions ────────────────────────────────────────────── */}
+          <Group justify="flex-end" gap="md" mt="xl">
+            <Button variant="subtle" color="gray" onClick={onCancel} size="md">
+              Cancel
+            </Button>
+            <Button
+              color="blue"
+              onClick={handleSubmit}
+              loading={submitting}
+              size="md"
+              radius="md"
+              style={{
+                paddingLeft: 40,
+                paddingRight: 40,
+                fontWeight: 600,
+                boxShadow: "0 4px 12px rgba(34, 139, 230, 0.25)",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
             >
-              View Certificate
-            </a>
-          </Text>
-        )}
-
-        {/* ── Actions ──────────────────────────────────────────────── */}
-        <Group justify="flex-end" gap="md">
-          <Button
-            variant="default"
-            onClick={onCancel}
-            size="md"
-            radius="md"
-            style={{ fontWeight: 500 }}
-          >
-            Cancel
-          </Button>
-          <Button
-            color="blue"
-            onClick={handleSubmit}
-            loading={submitting}
-            size="md"
-            radius="md"
-            style={{
-              fontWeight: 600,
-              boxShadow: "0 4px 12px rgba(34, 139, 230, 0.2)",
-              transition: "transform 0.15s ease",
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            Submit Application
-          </Button>
-        </Group>
+              {editData ? "Update Application" : "Submit Application"}
+            </Button>
+          </Group>
+        </Stack>
       </Paper>
     </Container>
   );
@@ -620,6 +675,7 @@ ScholarshipForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   onSubmitted: PropTypes.func,
   editData: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     category: PropTypes.string,
     cpi: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     annual_income: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),

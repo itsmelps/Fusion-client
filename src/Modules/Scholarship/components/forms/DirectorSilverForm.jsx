@@ -201,6 +201,10 @@ export default function DirectorSilverForm({
       if (value) formDataToSend.append(key, value);
     });
 
+    if (editData?.id) {
+      formDataToSend.append("application_id", editData.id);
+    }
+
     try {
       const token = localStorage.getItem("authToken");
       const res = await fetch(submitSilverRoute, {
@@ -403,7 +407,7 @@ export default function DirectorSilverForm({
                 e.currentTarget.style.transform = "translateY(0)";
               }}
             >
-              Submit
+              {editData ? "Update" : "Submit"}
             </Button>
           </Group>
         </form>
@@ -416,6 +420,7 @@ DirectorSilverForm.propTypes = {
   onCancel: PropTypes.func,
   onSubmitted: PropTypes.func,
   editData: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     justification: PropTypes.string,
     correspondence_address: PropTypes.string,
     nearest_policestation: PropTypes.string,

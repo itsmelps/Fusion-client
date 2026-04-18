@@ -235,6 +235,10 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
       if (value) formDataToSend.append(key, value);
     });
 
+    if (editData?.id) {
+      formDataToSend.append("application_id", editData.id);
+    }
+
     try {
       const token = localStorage.getItem("authToken");
       const res = await fetch(submitPdmRoute, {
@@ -518,7 +522,7 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
-                  Submit
+                  {editData ? "Update" : "Submit"}
                 </Button>
               </Group>
             </form>
@@ -533,6 +537,7 @@ DMProficiencyForm.propTypes = {
   onCancel: PropTypes.func,
   onSubmitted: PropTypes.func,
   editData: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     title_name: PropTypes.string,
     no_of_students: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     justification: PropTypes.string,
