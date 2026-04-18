@@ -47,27 +47,32 @@ function ScholarshipTypesTable({ onApply }) {
     const getData = async () => {
       try {
         const data = await fetchAwards();
-        // Filter for scholarship types only (not medals/awards)
+        // Any award marked live that doesn't say "Medal" should be treated as a scholarship here
         const filtered = data.filter((a) => {
+          if (!a.publish_flag) return false;
           const n = (a.award_name || "").toLowerCase();
-          return (
-            n.includes("mcm") ||
-            n.includes("single parent") ||
-            n.includes("merit-cum-means") ||
-            n.includes("merit cum means")
+          // Exclude medals/prizes (they go to AwardsTable)
+          return !(
+            n.includes("medal") ||
+            n.includes("prize") ||
+            n.includes("award")
           );
         });
+
         // Map to consistent shape
         const mapped = filtered.map((a) => {
           const n = (a.award_name || "").toLowerCase();
-          const isMerit =
-            n.includes("mcm") ||
-            n.includes("merit-cum-means") ||
-            n.includes("merit cum means");
+          const isMerit = n.includes("mcm") || n.includes("merit");
+          const isSingleParent = n.includes("single parent");
+
           return {
             id: a.id,
             award_name: a.award_name,
-            category: isMerit ? "MERIT-BASED" : "NEED-BASED",
+            category: isMerit
+              ? "MERIT-BASED"
+              : isSingleParent
+                ? "NEED-BASED"
+                : "OTHER",
             amount: a.income_ceiling || 90250.0,
             frequency: "Annual",
             max_backlogs: isMerit ? 0 : 1,

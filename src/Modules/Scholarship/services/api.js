@@ -34,6 +34,8 @@ import {
   withdrawApplicationRoute,
   downloadApplicationRoute,
   forwardApplicationRoute,
+  createNewAwardRoute,
+  retireAwardRoute,
 } from "../../../routes/SPACSRoutes";
 import { host } from "../../../routes/globalRoutes";
 
@@ -397,6 +399,34 @@ export const forwardApplication = async (applicationId, scholarshipType) => {
       // non-JSON
     }
     throw new Error(errMsg);
+  }
+  return response.json();
+};
+
+// ── Award Management (Convenor) ───────────────────────────────────────────
+
+export const createAwardNew = async (awardData) => {
+  const response = await fetch(createNewAwardRoute, {
+    method: "POST",
+    headers: getJsonHeaders(),
+    body: JSON.stringify(awardData),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.detail || "Failed to create award");
+  }
+  return response.json();
+};
+
+export const retireAward = async (awardId) => {
+  const response = await fetch(retireAwardRoute, {
+    method: "POST",
+    headers: getJsonHeaders(),
+    body: JSON.stringify({ id: awardId }),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.detail || "Failed to retire award");
   }
   return response.json();
 };

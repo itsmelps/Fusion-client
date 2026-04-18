@@ -10,6 +10,7 @@ import ScholarshipTypesTable from "../tables/ScholarshipTypesTable";
 import ApplicationsTable from "../tables/ApplicationsTable";
 import AwardsTable from "../tables/AwardsTable";
 import WithdrawalRequests from "../tables/WithdrawalRequests";
+import ManageScholarshipsAwards from "../tables/ManageScholarshipsAwards";
 
 // Form components
 import ScholarshipForm from "../forms/ScholarshipForm";
@@ -33,10 +34,10 @@ function ScholarshipShell() {
     { key: "types", label: "Scholarship Types" },
     { key: "applications", label: "Applications" },
     { key: "awards", label: "Awards" },
-    ...(isAssistant || isConvenor
+    ...(isAssistant
       ? [{ key: "withdrawals", label: "Withdrawal Requests" }]
       : []),
-    { key: "merit_lists", label: "Merit Lists" },
+    ...(isConvenor ? [{ key: "management", label: "Management" }] : []),
   ];
 
   const handleTabChange = (direction) => {
@@ -143,12 +144,8 @@ function ScholarshipShell() {
         return <AwardsTable />;
       case "withdrawals":
         return <WithdrawalRequests />;
-      case "merit_lists":
-        return (
-          <Text c="dimmed" ta="center" py="xl">
-            Merit lists will be displayed here once generated.
-          </Text>
-        );
+      case "management":
+        return <ManageScholarshipsAwards />;
       default:
         return <ScholarshipTypesTable />;
     }
