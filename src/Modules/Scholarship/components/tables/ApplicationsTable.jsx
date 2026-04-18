@@ -257,10 +257,13 @@ function ApplicationsTable({ onApply, onEdit }) {
 
   const rows = applications.map((app) => {
     const rawStatus = app.status ? app.status.toUpperCase() : "INCOMPLETE";
-    // Student can withdraw only if status is SUBMITTED (not yet forwarded)
-    const canWithdraw = isStudent && rawStatus === "SUBMITTED";
-    // Student can edit only if status is INCOMPLETE (sent back by assistant)
-    const canEdit = isStudent && rawStatus === "INCOMPLETE";
+    const isWithdrawalPending = app.withdrawal_pending;
+    // Student can withdraw only if status is SUBMITTED (not yet forwarded) and no pending withdrawal
+    const canWithdraw =
+      isStudent && rawStatus === "SUBMITTED" && !isWithdrawalPending;
+    // Student can edit only if status is INCOMPLETE (sent back by assistant) and no pending withdrawal
+    const canEdit =
+      isStudent && rawStatus === "INCOMPLETE" && !isWithdrawalPending;
     const canDownload = isStudent;
 
     return (
@@ -278,10 +281,16 @@ function ApplicationsTable({ onApply, onEdit }) {
           <Text size="sm">{app.academic_year || "2025-26"}</Text>
         </Table.Td>
         <Table.Td>
-          <Text size="sm">{app.semester || "6"}</Text>
+          <Text size="sm">{app.semester || "1"}</Text>
         </Table.Td>
         <Table.Td>
-          <StatusBadge status={rawStatus} />
+          {isWithdrawalPending ? (
+            <Badge color="orange" variant="light" size="md">
+              WITHDRAW REQUESTED
+            </Badge>
+          ) : (
+            <StatusBadge status={rawStatus} />
+          )}
         </Table.Td>
         <Table.Td>
           <Text size="sm">
