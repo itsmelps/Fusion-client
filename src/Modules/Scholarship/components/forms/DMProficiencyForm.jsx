@@ -11,12 +11,14 @@ import {
   Paper,
   Title,
   NumberInput,
+  Text,
   Alert,
   Notification,
   Loader,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { IconAlertCircle, IconCheck } from "@tabler/icons-react";
+import PropTypes from "prop-types";
 import {
   submitPdmRoute,
   getDraftRoute,
@@ -27,7 +29,7 @@ import {
 
 const AWARD_TYPE = "dm";
 
-export default function DMProficiencyForm() {
+export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
   const [submitting, setSubmitting] = useState(false);
   const [draftLoading, setDraftLoading] = useState(true);
   const [duplicateWarning, setDuplicateWarning] = useState(false);
@@ -36,28 +38,28 @@ export default function DMProficiencyForm() {
   const form = useForm({
     initialValues: {
       award_type: "D&M Proficiency Gold Medal",
-      justification: "",
-      correspondence_address: "",
-      nearest_policestation: "",
-      nearest_railwaystation: "",
-      financial_assistance: "",
-      grand_total: "",
-      title_name: "",
-      no_of_students: "",
-      roll_no1: "",
-      roll_no2: "",
-      roll_no3: "",
-      roll_no4: "",
-      roll_no5: "",
-      brief_description: "",
-      cse_topic: "",
-      ece_topic: "",
-      mech_topic: "",
-      design_topic: "",
-      cse_percentage: "",
-      ece_percentage: "",
-      mech_percentage: "",
-      design_percentage: "",
+      justification: editData?.justification || "",
+      correspondence_address: editData?.correspondence_address || "",
+      nearest_policestation: editData?.nearest_policestation || "",
+      nearest_railwaystation: editData?.nearest_railwaystation || "",
+      financial_assistance: editData?.financial_assistance || "",
+      grand_total: editData?.grand_total || "",
+      title_name: editData?.title_name || "",
+      no_of_students: editData?.no_of_students || "",
+      roll_no1: editData?.roll_no1 || "",
+      roll_no2: editData?.roll_no2 || "",
+      roll_no3: editData?.roll_no3 || "",
+      roll_no4: editData?.roll_no4 || "",
+      roll_no5: editData?.roll_no5 || "",
+      brief_description: editData?.brief_description || "",
+      cse_topic: editData?.cse_topic || "",
+      ece_topic: editData?.ece_topic || "",
+      mech_topic: editData?.mech_topic || "",
+      design_topic: editData?.design_topic || "",
+      cse_percentage: editData?.cse_percentage || "",
+      ece_percentage: editData?.ece_percentage || "",
+      mech_percentage: editData?.mech_percentage || "",
+      design_percentage: editData?.design_percentage || "",
       Marksheet: null,
     },
     validate: {
@@ -252,6 +254,7 @@ export default function DMProficiencyForm() {
           message: "Form submitted successfully!",
           color: "green",
         });
+        if (onSubmitted) onSubmitted();
       } else {
         const data = await res.json();
         setNotification({
@@ -474,17 +477,46 @@ export default function DMProficiencyForm() {
                       label="Uploaded File"
                     />
                   )}
+                  {editData?.relevant_document && (
+                    <Text size="sm" mt="xs">
+                      Current file:{" "}
+                      <a
+                        href={editData.relevant_document}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        View Document
+                      </a>
+                    </Text>
+                  )}
                 </Grid.Col>
               </Grid>
               <Group position="apart" mt="xl">
-                <Button variant="outline" onClick={handleSaveDraft}>
-                  Save Draft
+                <Button
+                  variant="outline"
+                  onClick={onCancel || handleSaveDraft}
+                  radius="md"
+                  style={{ fontWeight: 500 }}
+                >
+                  {onCancel ? "Cancel" : "Save Draft"}
                 </Button>
                 <Button
                   type="submit"
                   color="blue"
                   loading={submitting}
                   disabled={duplicateWarning}
+                  radius="md"
+                  style={{
+                    fontWeight: 600,
+                    boxShadow: "0 4px 12px rgba(34, 139, 230, 0.2)",
+                    transition: "transform 0.15s ease",
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
                 >
                   Submit
                 </Button>
@@ -496,3 +528,36 @@ export default function DMProficiencyForm() {
     </Container>
   );
 }
+
+DMProficiencyForm.propTypes = {
+  onCancel: PropTypes.func,
+  onSubmitted: PropTypes.func,
+  editData: PropTypes.shape({
+    title_name: PropTypes.string,
+    no_of_students: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    justification: PropTypes.string,
+    correspondence_address: PropTypes.string,
+    nearest_policestation: PropTypes.string,
+    nearest_railwaystation: PropTypes.string,
+    financial_assistance: PropTypes.string,
+    brief_description: PropTypes.string,
+    grand_total: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    roll_no1: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    roll_no2: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    roll_no3: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    roll_no4: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    roll_no5: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    ece_topic: PropTypes.string,
+    cse_topic: PropTypes.string,
+    mech_topic: PropTypes.string,
+    design_topic: PropTypes.string,
+    ece_percentage: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    cse_percentage: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    mech_percentage: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    design_percentage: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number,
+    ]),
+    relevant_document: PropTypes.string,
+  }),
+};

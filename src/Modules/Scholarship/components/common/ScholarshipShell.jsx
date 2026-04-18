@@ -13,6 +13,9 @@ import WithdrawalRequests from "../tables/WithdrawalRequests";
 
 // Form components
 import ScholarshipForm from "../forms/ScholarshipForm";
+import DirectorGoldForm from "../forms/DirectorGoldForm";
+import DirectorSilverForm from "../forms/DirectorSilverForm";
+import DMProficiencyForm from "../forms/DMProficiencyForm";
 
 function ScholarshipShell() {
   const user = useSelector((state) => state.user);
@@ -85,11 +88,47 @@ function ScholarshipShell() {
   const renderActiveTab = () => {
     if (viewingForm) {
       const awardName = selectedScholarship?.award_name || "";
+      const type = (editingApplication?.type_name || awardName).toLowerCase();
+
+      const formProps = {
+        onCancel: handleFormCancel,
+        onSubmitted: handleFormSubmitted,
+        editData: editingApplication,
+      };
+
+      if (type.includes("gold")) {
+        return (
+          <DirectorGoldForm
+            onCancel={formProps.onCancel}
+            onSubmitted={formProps.onSubmitted}
+            editData={formProps.editData}
+          />
+        );
+      }
+      if (type.includes("silver")) {
+        return (
+          <DirectorSilverForm
+            onCancel={formProps.onCancel}
+            onSubmitted={formProps.onSubmitted}
+            editData={formProps.editData}
+          />
+        );
+      }
+      if (type.includes("dm") || type.includes("proficiency")) {
+        return (
+          <DMProficiencyForm
+            onCancel={formProps.onCancel}
+            onSubmitted={formProps.onSubmitted}
+            editData={formProps.editData}
+          />
+        );
+      }
+
       return (
         <ScholarshipForm
-          onCancel={handleFormCancel}
-          onSubmitted={handleFormSubmitted}
-          editData={editingApplication}
+          onCancel={formProps.onCancel}
+          onSubmitted={formProps.onSubmitted}
+          editData={formProps.editData}
           initialType={awardName}
         />
       );

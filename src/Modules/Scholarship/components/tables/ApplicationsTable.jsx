@@ -597,6 +597,88 @@ function ApplicationsTable({ onApply, onEdit }) {
                 </Table.Tr>
               </Table.Tbody>
             </Table>
+
+            <Text fw={700} mt="xl" mb="sm" size="md">
+              Form Data
+            </Text>
+            <Table verticalSpacing="xs" striped withTableBorder>
+              <Table.Tbody>
+                {Object.entries(viewModal.app)
+                  .filter(
+                    ([key, value]) =>
+                      ![
+                        "id",
+                        "student",
+                        "status",
+                        "date",
+                        "type_name",
+                        "key_type",
+                      ].includes(key) &&
+                      value !== null &&
+                      value !== "" &&
+                      typeof value !== "object",
+                  )
+                  .map(([key, value]) => (
+                    <Table.Tr key={key}>
+                      <Table.Td
+                        fw={500}
+                        style={{ textTransform: "capitalize" }}
+                      >
+                        {key.replace(/_/g, " ")}
+                      </Table.Td>
+                      <Table.Td>{String(value)}</Table.Td>
+                    </Table.Tr>
+                  ))}
+              </Table.Tbody>
+            </Table>
+
+            {/* Documents section */}
+            <Text fw={700} mt="xl" mb="sm" size="md">
+              Documents
+            </Text>
+            <Group gap="xs">
+              {Object.entries(viewModal.app)
+                .filter(
+                  ([key, value]) =>
+                    (key.toLowerCase().includes("certificate") ||
+                      key.toLowerCase().includes("marksheet") ||
+                      key.toLowerCase().includes("receipt") ||
+                      key.toLowerCase().includes("details") ||
+                      key.toLowerCase().includes("affidavit") ||
+                      key.toLowerCase().includes("card") ||
+                      key.toLowerCase().includes("document")) &&
+                    value,
+                )
+                .map(([key, value]) => (
+                  <Button
+                    key={key}
+                    component="a"
+                    href={value}
+                    target="_blank"
+                    variant="light"
+                    color="blue"
+                    size="compact-sm"
+                    leftSection={<DownloadSimple size={14} />}
+                  >
+                    {key.replace(/_/g, " ")}
+                  </Button>
+                ))}
+              {Object.entries(viewModal.app).filter(
+                ([key, value]) =>
+                  (key.toLowerCase().includes("certificate") ||
+                    key.toLowerCase().includes("marksheet") ||
+                    key.toLowerCase().includes("receipt") ||
+                    key.toLowerCase().includes("details") ||
+                    key.toLowerCase().includes("affidavit") ||
+                    key.toLowerCase().includes("card") ||
+                    key.toLowerCase().includes("document")) &&
+                  value,
+              ).length === 0 && (
+                <Text c="dimmed" size="sm">
+                  No documents attached.
+                </Text>
+              )}
+            </Group>
           </div>
         )}
       </Modal>

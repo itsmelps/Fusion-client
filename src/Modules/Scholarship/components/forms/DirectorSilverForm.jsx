@@ -10,11 +10,13 @@ import {
   Paper,
   Title,
   NumberInput,
+  Text,
   Alert,
   Notification,
   Loader,
 } from "@mantine/core";
 import { IconAlertCircle, IconCheck } from "@tabler/icons-react";
+import PropTypes from "prop-types";
 import {
   submitSilverRoute,
   getDraftRoute,
@@ -26,18 +28,22 @@ import { validateGrandTotal } from "../../utils/helpers";
 
 const AWARD_TYPE = "silver";
 
-export default function DirectorSilverForm() {
+export default function DirectorSilverForm({
+  onCancel,
+  onSubmitted,
+  editData,
+}) {
   const [formData, setFormData] = useState({
     award_type: "Director's Silver",
     Marksheet: null,
-    justification: "",
-    correspondence_address: "",
-    nearest_policestation: "",
-    nearest_railwaystation: "",
-    financial_assistance: "",
-    grand_total: "",
-    inside_achievements: "",
-    outside_achievements: "",
+    justification: editData?.justification || "",
+    correspondence_address: editData?.correspondence_address || "",
+    nearest_policestation: editData?.nearest_policestation || "",
+    nearest_railwaystation: editData?.nearest_railwaystation || "",
+    financial_assistance: editData?.financial_assistance || "",
+    grand_total: editData?.grand_total || "",
+    inside_achievements: editData?.inside_achievements || "",
+    outside_achievements: editData?.outside_achievements || "",
   });
   const [grandTotalError, setGrandTotalError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -214,6 +220,7 @@ export default function DirectorSilverForm() {
           message: "Form submitted successfully!",
           color: "green",
         });
+        if (onSubmitted) onSubmitted();
       } else {
         const data = await res.json();
         setNotification({
@@ -355,17 +362,46 @@ export default function DirectorSilverForm() {
                   label="Uploaded File"
                 />
               )}
+              {editData?.relevant_document && (
+                <Text size="sm" mt="xs">
+                  Current file:{" "}
+                  <a
+                    href={editData.relevant_document}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View Document
+                  </a>
+                </Text>
+              )}
             </Grid.Col>
           </Grid>
           <Group position="apart" mt="xl">
-            <Button variant="outline" onClick={handleSaveDraft}>
-              Save Draft
+            <Button
+              variant="outline"
+              onClick={onCancel || handleSaveDraft}
+              radius="md"
+              style={{ fontWeight: 500 }}
+            >
+              {onCancel ? "Cancel" : "Save Draft"}
             </Button>
             <Button
               type="submit"
               color="blue"
               loading={submitting}
               disabled={duplicateWarning}
+              radius="md"
+              style={{
+                fontWeight: 600,
+                boxShadow: "0 4px 12px rgba(34, 139, 230, 0.2)",
+                transition: "transform 0.15s ease",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
             >
               Submit
             </Button>
@@ -375,3 +411,20 @@ export default function DirectorSilverForm() {
     </Container>
   );
 }
+
+DirectorSilverForm.propTypes = {
+  onCancel: PropTypes.func,
+  onSubmitted: PropTypes.func,
+  editData: PropTypes.shape({
+    justification: PropTypes.string,
+    correspondence_address: PropTypes.string,
+    nearest_policestation: PropTypes.string,
+    nearest_railwaystation: PropTypes.string,
+    financial_assistance: PropTypes.string,
+    grand_total: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    inside_achievements: PropTypes.string,
+    outside_achievements: PropTypes.string,
+    relevant_document: PropTypes.string,
+    award_type: PropTypes.string,
+  }),
+};
