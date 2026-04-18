@@ -28,14 +28,13 @@ import PropTypes from "prop-types";
 import * as api from "../../services/api";
 
 const STATUS_CONFIG = {
-  PENDING: { color: "orange", label: "PENDING" },
+  SUBMITTED: { color: "blue", label: "SUBMITTED" },
   INCOMPLETE: { color: "gray", label: "INCOMPLETE" },
   FORWARDED: { color: "indigo", label: "FORWARDED" },
   ACCEPT: { color: "green", label: "ACCEPTED" },
   REJECT: { color: "red", label: "REJECTED" },
   ACCEPTED: { color: "green", label: "ACCEPTED" },
   REJECTED: { color: "red", label: "REJECTED" },
-  WITHDRAWN: { color: "gray", label: "WITHDRAWN" },
 };
 
 function StatusBadge({ status }) {
@@ -203,6 +202,7 @@ function ApplicationsTable({ onApply, onEdit }) {
       else if (type === "gold") await api.updateGoldStatus(appId, action, note);
       else if (type === "silver")
         await api.updateSilverStatus(appId, action, note);
+      else if (type === "dm") await api.updatePDMStatus(appId, action, note);
 
       notifications.show({
         title: "Success",
@@ -256,10 +256,11 @@ function ApplicationsTable({ onApply, onEdit }) {
   /* ── Table rows ──────────────────────────────────────────────────── */
 
   const rows = applications.map((app) => {
-    const rawStatus = app.status ? app.status.toUpperCase() : "PENDING";
-    const canWithdraw =
-      isStudent && (rawStatus === "PENDING" || rawStatus === "INCOMPLETE");
-    const canEdit = isStudent && rawStatus === "PENDING";
+    const rawStatus = app.status ? app.status.toUpperCase() : "INCOMPLETE";
+    // Student can withdraw only if status is SUBMITTED (not yet forwarded)
+    const canWithdraw = isStudent && rawStatus === "SUBMITTED";
+    // Student can edit only if status is INCOMPLETE (sent back by assistant)
+    const canEdit = isStudent && rawStatus === "INCOMPLETE";
     const canDownload = isStudent;
 
     return (
@@ -345,32 +346,31 @@ function ApplicationsTable({ onApply, onEdit }) {
               </Tooltip>
             )}
 
-            {/* Assistant Actions */}
-            {isAssistant &&
-              (rawStatus === "PENDING" || rawStatus === "INCOMPLETE") && (
-                <>
-                  <Tooltip label="Forward to Convenor">
-                    <ActionIcon
-                      variant="subtle"
-                      color="indigo"
-                      size="md"
-                      onClick={() => handleAction(app, "forward")}
-                    >
-                      <CheckCircle size={18} />
-                    </ActionIcon>
-                  </Tooltip>
-                  <Tooltip label="Ask Student for Info">
-                    <ActionIcon
-                      variant="subtle"
-                      color="orange"
-                      size="md"
-                      onClick={() => handleAction(app, "ask_info")}
-                    >
-                      <ChatCircleText size={18} />
-                    </ActionIcon>
-                  </Tooltip>
-                </>
-              )}
+            {/* Assistant Actions: Forward for SUBMITTED apps */}
+            {isAssistant && rawStatus === "SUBMITTED" && (
+              <>
+                <Tooltip label="Forward to Convenor">
+                  <ActionIcon
+                    variant="subtle"
+                    color="indigo"
+                    size="md"
+                    onClick={() => handleAction(app, "forward")}
+                  >
+                    <CheckCircle size={18} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Message Student">
+                  <ActionIcon
+                    variant="subtle"
+                    color="orange"
+                    size="md"
+                    onClick={() => handleAction(app, "ask_info")}
+                  >
+                    <ChatCircleText size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </>
+            )}
 
             {/* Convenor Actions */}
             {isConvenor && rawStatus === "FORWARDED" && (
@@ -396,18 +396,6 @@ function ApplicationsTable({ onApply, onEdit }) {
                   </ActionIcon>
                 </Tooltip>
               </>
-            )}
-            {isConvenor && rawStatus === "PENDING" && (
-              <Tooltip label="Ask Info">
-                <ActionIcon
-                  variant="subtle"
-                  color="orange"
-                  size="md"
-                  onClick={() => handleAction(app, "ask_info")}
-                >
-                  <ChatCircleText size={18} />
-                </ActionIcon>
-              </Tooltip>
             )}
 
             {/* Student: View Notes when INCOMPLETE */}

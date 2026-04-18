@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { CaretCircleLeft, CaretCircleRight } from "@phosphor-icons/react";
 import { Tabs, Button, Flex, Text } from "@mantine/core";
+import { useSelector } from "react-redux";
 import CustomBreadcrumbs from "../../../../components/Breadcrumbs";
 import classes from "../../../Dashboard/Dashboard.module.css";
 
@@ -8,19 +9,30 @@ import classes from "../../../Dashboard/Dashboard.module.css";
 import ScholarshipTypesTable from "../tables/ScholarshipTypesTable";
 import ApplicationsTable from "../tables/ApplicationsTable";
 import AwardsTable from "../tables/AwardsTable";
+import WithdrawalRequests from "../tables/WithdrawalRequests";
+
 // Form components
 import ScholarshipForm from "../forms/ScholarshipForm";
 
 function ScholarshipShell() {
+  const user = useSelector((state) => state.user);
+  const role = user?.role || "student";
+  const isAssistant = role === "spacsassistant";
+  const isConvenor = role === "spacsconvenor";
+
   const [activeTab, setActiveTab] = useState("types");
   const [viewingForm, setViewingForm] = useState(false);
   const [editingApplication, setEditingApplication] = useState(null);
+  const [selectedScholarship, setSelectedScholarship] = useState(null);
   const tabsListRef = useRef(null);
 
   const tabItems = [
     { key: "types", label: "Scholarship Types" },
     { key: "applications", label: "Applications" },
     { key: "awards", label: "Awards" },
+    ...(isAssistant || isConvenor
+      ? [{ key: "withdrawals", label: "Withdrawal Requests" }]
+      : []),
     { key: "merit_lists", label: "Merit Lists" },
   ];
 
@@ -35,6 +47,7 @@ function ScholarshipShell() {
     setActiveTab(tabItems[newIndex].key);
     setViewingForm(false);
     setEditingApplication(null);
+    setSelectedScholarship(null);
 
     if (tabsListRef.current) {
       tabsListRef.current.scrollBy({
@@ -44,35 +57,40 @@ function ScholarshipShell() {
     }
   };
 
-  const handleApply = () => {
+  const handleApply = (scholarship) => {
+    setSelectedScholarship(scholarship);
     setViewingForm(true);
     setEditingApplication(null);
   };
 
   const handleEdit = (application) => {
     setEditingApplication(application);
+    setSelectedScholarship({ award_name: application.type_name });
     setViewingForm(true);
   };
 
   const handleFormCancel = () => {
     setViewingForm(false);
     setEditingApplication(null);
+    setSelectedScholarship(null);
   };
 
   const handleFormSubmitted = () => {
     setViewingForm(false);
     setEditingApplication(null);
+    setSelectedScholarship(null);
     setActiveTab("applications");
   };
 
   const renderActiveTab = () => {
-    // Application form (new or edit)
     if (viewingForm) {
+      const awardName = selectedScholarship?.award_name || "";
       return (
         <ScholarshipForm
           onCancel={handleFormCancel}
           onSubmitted={handleFormSubmitted}
           editData={editingApplication}
+          initialType={awardName}
         />
       );
     }
@@ -84,6 +102,8 @@ function ScholarshipShell() {
         return <ApplicationsTable onApply={handleApply} onEdit={handleEdit} />;
       case "awards":
         return <AwardsTable />;
+      case "withdrawals":
+        return <WithdrawalRequests />;
       case "merit_lists":
         return (
           <Text c="dimmed" ta="center" py="xl">
@@ -126,6 +146,7 @@ function ScholarshipShell() {
               setActiveTab(val);
               setViewingForm(false);
               setEditingApplication(null);
+              setSelectedScholarship(null);
             }}
           >
             <Tabs.List style={{ display: "flex", flexWrap: "nowrap" }}>
@@ -138,10 +159,10 @@ function ScholarshipShell() {
                   }
                   style={{
                     padding: "1rem 1.5rem",
-                    color: activeTab === item.key ? "#17ABFF" : "black",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  <Text size="lg" fw={activeTab === item.key ? 700 : 500}>
+                  <Text size="sm" fw={activeTab === item.key ? 700 : 400}>
                     {item.label}
                   </Text>
                 </Tabs.Tab>
