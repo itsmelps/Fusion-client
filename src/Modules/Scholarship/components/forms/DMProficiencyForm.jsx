@@ -15,6 +15,8 @@ import {
   Alert,
   Notification,
   Loader,
+  Stack,
+  Divider,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { IconAlertCircle, IconCheck } from "@tabler/icons-react";
@@ -36,6 +38,13 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
   const [notification, setNotification] = useState(null);
 
   const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+
+  const inputStyles = {
+    input: {
+      height: "42px",
+      minHeight: "42px",
+    },
+  };
 
   const form = useForm({
     initialValues: {
@@ -328,108 +337,131 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
               DM Proficiency Form
             </Title>
             <form onSubmit={handleSubmit}>
-              <Grid gutter="lg">
-                {["justification", "correspondence_address"].map((field) => (
-                  <Grid.Col span={12} key={field}>
-                    <Textarea
-                      label={field.replace(/_/g, " ")}
-                      placeholder={`Enter ${field.replace(/_/g, " ")}`}
-                      minRows={3}
-                      {...form.getInputProps(field)}
+              <Stack gap="lg">
+                <div>
+                  {["justification", "correspondence_address"].map((field) => (
+                    <div key={field} style={{ marginBottom: "15px" }}>
+                      <Textarea
+                        label={field.replace(/_/g, " ")}
+                        placeholder={`Provide detailed ${field.replace(/_/g, " ")}...`}
+                        minRows={3}
+                        {...form.getInputProps(field)}
+                        required
+                        maxLength={500}
+                        description="Maximum 500 characters"
+                        descriptionProps={{ color: "dimmed" }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <Grid gutter="md">
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <TextInput
+                      label="Nearest Police Station"
+                      placeholder="e.g. Madhav Nagar Police Station"
+                      {...form.getInputProps("nearest_policestation")}
                       required
                       maxLength={500}
                       description="Maximum 500 characters"
                       descriptionProps={{ color: "dimmed" }}
+                      styles={inputStyles}
                     />
                   </Grid.Col>
-                ))}
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <TextInput
-                    label="Nearest Police Station"
-                    placeholder="Enter Nearest Police Station"
-                    {...form.getInputProps("nearest_policestation")}
-                    required
-                    maxLength={500}
-                    description="Maximum 500 characters"
-                    descriptionProps={{ color: "dimmed" }}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <TextInput
-                    label="Nearest Railway Station"
-                    placeholder="Enter Nearest Railway Station"
-                    {...form.getInputProps("nearest_railwaystation")}
-                    required
-                    maxLength={500}
-                    description="Maximum 500 characters"
-                    descriptionProps={{ color: "dimmed" }}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <TextInput
-                    label="Financial Assistance"
-                    placeholder="Enter Financial Assistance"
-                    {...form.getInputProps("financial_assistance")}
-                    required
-                    maxLength={500}
-                    description="Maximum 500 characters"
-                    descriptionProps={{ color: "dimmed" }}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <NumberInput
-                    label="Grand Total"
-                    placeholder="Enter Grand Total"
-                    value={form.values.grand_total}
-                    onChange={(value) => {
-                      form.setFieldValue("grand_total", value);
-                      form.validateField("grand_total");
-                    }}
-                    error={form.errors.grand_total}
-                    required
-                    description="Maximum 500 characters"
-                    descriptionProps={{ color: "dimmed" }}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <TextInput
-                    label="Title Name"
-                    placeholder="Enter Title Name"
-                    {...form.getInputProps("title_name")}
-                    required
-                    maxLength={500}
-                    description="Maximum 500 characters"
-                    descriptionProps={{ color: "dimmed" }}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <NumberInput
-                    label="Number of Students"
-                    placeholder="Enter Number of Students"
-                    value={form.values.no_of_students}
-                    onChange={(value) => {
-                      form.setFieldValue("no_of_students", value);
-                      form.validateField("no_of_students");
-                    }}
-                    error={form.errors.no_of_students}
-                    required
-                  />
-                </Grid.Col>
-                {[1, 2, 3, 4, 5].map((num) => (
-                  <Grid.Col span={{ base: 12, sm: 6 }} key={`roll_no${num}`}>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
                     <TextInput
-                      label={`Roll No ${num}`}
-                      placeholder={`Enter Roll No ${num}`}
-                      {...form.getInputProps(`roll_no${num}`)}
+                      label="Nearest Railway Station"
+                      placeholder="e.g. Jabalpur Junction"
+                      {...form.getInputProps("nearest_railwaystation")}
                       required
-                      maxLength={10}
+                      maxLength={500}
+                      description="Maximum 500 characters"
+                      descriptionProps={{ color: "dimmed" }}
+                      styles={inputStyles}
                     />
                   </Grid.Col>
-                ))}
-                <Grid.Col span={12}>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <TextInput
+                      label="Financial Assistance"
+                      placeholder="e.g. YES/NO (State Govt)"
+                      {...form.getInputProps("financial_assistance")}
+                      required
+                      maxLength={500}
+                      description="Maximum 500 characters"
+                      descriptionProps={{ color: "dimmed" }}
+                      styles={inputStyles}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <NumberInput
+                      label="Grand Total"
+                      placeholder="e.g. 50000"
+                      value={form.values.grand_total}
+                      onChange={(value) => {
+                        form.setFieldValue("grand_total", value);
+                        form.validateField("grand_total");
+                      }}
+                      error={form.errors.grand_total}
+                      required
+                      description="Maximum 500 characters"
+                      descriptionProps={{ color: "dimmed" }}
+                      styles={inputStyles}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <TextInput
+                      label="Title Name"
+                      placeholder="e.g. Smart Energy Management"
+                      {...form.getInputProps("title_name")}
+                      required
+                      maxLength={500}
+                      description="Maximum 500 characters"
+                      descriptionProps={{ color: "dimmed" }}
+                      styles={inputStyles}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <NumberInput
+                      label="Number of Students"
+                      placeholder="e.g. 2"
+                      value={form.values.no_of_students}
+                      onChange={(value) => {
+                        form.setFieldValue("no_of_students", value);
+                        form.validateField("no_of_students");
+                      }}
+                      error={form.errors.no_of_students}
+                      required
+                      styles={inputStyles}
+                    />
+                  </Grid.Col>
+                </Grid>
+
+                <div>
+                  <Title order={5} mb="sm">
+                    Group Members (Roll Numbers)
+                  </Title>
+                  <Grid gutter="md">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <Grid.Col
+                        span={{ base: 12, sm: 4, md: 2.4 }}
+                        key={`roll_no${num}`}
+                      >
+                        <TextInput
+                          label={`Member ${num}`}
+                          placeholder="2021BT001"
+                          {...form.getInputProps(`roll_no${num}`)}
+                          maxLength={10}
+                          styles={inputStyles}
+                        />
+                      </Grid.Col>
+                    ))}
+                  </Grid>
+                </div>
+
+                <div>
                   <Textarea
                     label="Brief Description"
-                    placeholder="Enter a brief description"
+                    placeholder="Summarize your project achievements..."
                     minRows={4}
                     {...form.getInputProps("brief_description")}
                     required
@@ -437,36 +469,42 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
                     description="Maximum 500 characters"
                     descriptionProps={{ color: "dimmed" }}
                   />
-                </Grid.Col>
-                {["cse", "ece", "mech", "design"].map((field) => (
-                  <React.Fragment key={field}>
-                    <Grid.Col span={{ base: 12, sm: 6 }}>
-                      <TextInput
-                        label={`${field.toUpperCase()} Topic`}
-                        placeholder={`Enter ${field.toUpperCase()} Topic`}
-                        {...form.getInputProps(`${field}_topic`)}
-                        required
-                        maxLength={500}
-                        description="Maximum 500 characters"
-                        descriptionProps={{ color: "dimmed" }}
-                      />
-                    </Grid.Col>
-                    <Grid.Col span={{ base: 12, sm: 6 }}>
-                      <NumberInput
-                        label={`${field.toUpperCase()} Percentage`}
-                        placeholder={`Enter ${field.toUpperCase()} Percentage`}
-                        value={form.values[`${field}_percentage`]}
-                        onChange={(value) => {
-                          form.setFieldValue(`${field}_percentage`, value);
-                          form.validateField(`${field}_percentage`);
-                        }}
-                        error={form.errors[`${field}_percentage`]}
-                        required
-                      />
-                    </Grid.Col>
-                  </React.Fragment>
-                ))}
-                <Grid.Col span={12}>
+                </div>
+                <Divider label="Technical Topics & Percentages" mb="md" />
+                <Grid gutter="lg">
+                  {["cse", "ece", "mech", "design"].map((field) => (
+                    <React.Fragment key={field}>
+                      <Grid.Col span={{ base: 12, sm: 6 }}>
+                        <TextInput
+                          label={`${field.toUpperCase()} Topic`}
+                          placeholder="e.g. Robotics or AI"
+                          {...form.getInputProps(`${field}_topic`)}
+                          required
+                          maxLength={500}
+                          description="Maximum 500 characters"
+                          descriptionProps={{ color: "dimmed" }}
+                          styles={inputStyles}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={{ base: 12, sm: 6 }}>
+                        <NumberInput
+                          label={`${field.toUpperCase()} Percentage`}
+                          placeholder="e.g. 85"
+                          value={form.values[`${field}_percentage`]}
+                          onChange={(value) => {
+                            form.setFieldValue(`${field}_percentage`, value);
+                            form.validateField(`${field}_percentage`);
+                          }}
+                          error={form.errors[`${field}_percentage`]}
+                          required
+                          styles={inputStyles}
+                        />
+                      </Grid.Col>
+                    </React.Fragment>
+                  ))}
+                </Grid>
+
+                <div style={{ marginTop: "20px" }}>
                   <input
                     id={marksheetInputId}
                     type="file"
@@ -520,8 +558,8 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
                       </a>
                     </Text>
                   )}
-                </Grid.Col>
-              </Grid>
+                </div>
+              </Stack>
               <Group position="apart" mt="xl">
                 <Button
                   variant="outline"

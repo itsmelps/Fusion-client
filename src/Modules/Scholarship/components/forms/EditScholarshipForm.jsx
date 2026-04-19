@@ -14,6 +14,16 @@ import PropTypes from "prop-types";
 import { updateCatalog } from "../../services/api";
 
 function EditScholarshipForm({ scholarship, onCancel, onSaved }) {
+  const inputStyles = {
+    input: {
+      height: "42px",
+      minHeight: "42px",
+    },
+    root: {
+      width: "100%",
+    },
+  };
+
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     award_name: scholarship.award_name || "",
@@ -73,37 +83,40 @@ function EditScholarshipForm({ scholarship, onCancel, onSaved }) {
         Edit Scholarship Type
       </Text>
 
-      <Grid gutter="lg">
-        <Grid.Col span={12}>
+      <Grid gutter="xl" align="flex-start">
+        <Grid.Col span={12} px="sm">
           <TextInput
             label="Name"
             value={formData.award_name}
             onChange={(e) => handleChange("award_name", e.currentTarget.value)}
             disabled // Often name shouldn't change to not break logic, but we make it read-only
             withAsterisk
+            styles={inputStyles}
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, sm: 6 }}>
+        <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
           <Select
             label="Category"
             data={["Merit-based", "Need-based"]}
             value={category}
             onChange={setCategory}
             withAsterisk
+            styles={inputStyles}
           />
         </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 6 }}>
+        <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
           <Select
             label="Frequency"
             data={["Annual", "Semester"]}
             value={formData.frequency}
             onChange={(val) => handleChange("frequency", val)}
             withAsterisk
+            styles={inputStyles}
           />
         </Grid.Col>
 
-        <Grid.Col span={12}>
+        <Grid.Col span={12} px="sm">
           <Textarea
             label="Description"
             value={formData.catalog}
@@ -113,50 +126,60 @@ function EditScholarshipForm({ scholarship, onCancel, onSaved }) {
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, sm: 6 }}>
+        <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
           <NumberInput
             label="Amount (INR)"
             value={formData.amount}
             onChange={(val) => handleChange("amount", val)}
             prefix="₹ "
             withAsterisk
+            hideControls
+            styles={inputStyles}
           />
         </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 6 }}>
+        <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
           <NumberInput
             label="Max Backlogs Allowed"
             value={formData.max_backlogs}
             onChange={(val) => handleChange("max_backlogs", val)}
+            hideControls
+            styles={inputStyles}
           />
         </Grid.Col>
 
-        <Grid.Col span={{ base: 12, sm: 6 }}>
+        <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
           <NumberInput
             label="CPI Cutoff"
             value={formData.cpi_cutoff}
             onChange={(val) => handleChange("cpi_cutoff", val)}
             decimalScale={2}
+            hideControls
+            styles={inputStyles}
           />
         </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 6 }}>
+        <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
           <NumberInput
             label="Annual Family Income Limit (₹)"
             value={formData.income_ceiling}
             onChange={(val) => handleChange("income_ceiling", val)}
             prefix="₹ "
+            hideControls
+            styles={inputStyles}
           />
         </Grid.Col>
 
-        <Grid.Col span={12}>
+        <Grid.Col span={12} px="sm">
           <TextInput
             label="Eligibility Criteria"
             value="CPI > 8.0 and family income < 8 LPA" // Placeholder
+            styles={inputStyles}
           />
         </Grid.Col>
-        <Grid.Col span={12}>
+        <Grid.Col span={12} px="sm">
           <TextInput
             label="Applicable Categories (comma-separated, e.g. GEN,SC,ST,OBC)"
             value="GEN,OBC,SC,ST" // Placeholder
+            styles={inputStyles}
           />
         </Grid.Col>
       </Grid>

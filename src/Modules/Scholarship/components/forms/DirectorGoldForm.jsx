@@ -62,6 +62,13 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
 
   const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
+  const inputStyles = {
+    input: {
+      height: "42px",
+      minHeight: "42px",
+    },
+  };
+
   // BR-SPACS-007: Load draft on mount
   useEffect(() => {
     const loadDraftAndCheckEligibility = async () => {
@@ -331,16 +338,17 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
           Director&apos;s Gold Medal Application Form
         </Title>
         <form onSubmit={handleSubmit}>
-          <Grid gutter="lg">
+          <Grid gutter="md">
             <Grid.Col span={{ base: 12, sm: 6 }}>
               <TextInput
                 label="Nearest Police Station"
                 name="nearest_policestation"
                 value={formData.nearest_policestation}
                 onChange={handleChange}
-                placeholder="Enter Nearest Police Station"
+                placeholder="e.g. Madhav Nagar Police Station"
                 required
                 maxLength={500}
+                styles={inputStyles}
               />
             </Grid.Col>
             <Grid.Col span={{ base: 12, sm: 6 }}>
@@ -349,11 +357,15 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
                 name="nearest_railwaystation"
                 value={formData.nearest_railwaystation}
                 onChange={handleChange}
-                placeholder="Enter Nearest Railway Station"
+                placeholder="e.g. Jabalpur Junction"
                 required
                 maxLength={500}
+                styles={inputStyles}
               />
             </Grid.Col>
+          </Grid>
+
+          <Grid gutter="md" mt="md">
             <Grid.Col span={{ base: 12, sm: 6 }}>
               <NumberInput
                 label="Grand Total Amount"
@@ -362,34 +374,49 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
                   setFormData((prev) => ({ ...prev, grand_total: value }));
                   setGrandTotalError(validateGrandTotal(value));
                 }}
-                placeholder="Enter Grand Total Amount"
+                placeholder="e.g. 50000"
                 min={0}
                 step={0.01}
                 decimalScale={2}
                 error={grandTotalError}
                 required
+                styles={inputStyles}
               />
             </Grid.Col>
-            {[
-              "justification",
-              "correspondence_address",
-              "financial_assistance",
-            ].map((field) => (
-              <Grid.Col span={12} key={field}>
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label="Financial Assistance"
+                name="financial_assistance"
+                value={formData.financial_assistance}
+                onChange={handleChange}
+                placeholder="e.g. Yes, from State Govt (if any)"
+                required
+                maxLength={500}
+                styles={inputStyles}
+              />
+            </Grid.Col>
+          </Grid>
+
+          <div style={{ marginTop: "20px" }}>
+            {["justification", "correspondence_address"].map((field) => (
+              <div key={field} style={{ marginBottom: "15px" }}>
                 <Textarea
                   label={field.replace(/_/g, " ")}
                   name={field}
                   value={formData[field]}
                   onChange={handleChange}
-                  placeholder={`Enter ${field.replace(/_/g, " ")}`}
+                  placeholder={`Provide detailed ${field.replace(/_/g, " ")}...`}
                   minRows={3}
                   required
                   maxLength={500}
                   description="Maximum 500 characters"
                   descriptionProps={{ color: "dimmed" }}
                 />
-              </Grid.Col>
+              </div>
             ))}
+          </div>
+
+          <Grid gutter="md" mt="md">
             {achievementFields.map((field) => (
               <Grid.Col span={{ base: 12, sm: 6 }} key={field}>
                 <Textarea
@@ -397,7 +424,7 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
                   name={field}
                   value={formData[field]}
                   onChange={handleChange}
-                  placeholder={`Enter ${field.replace(/_/g, " ")}`}
+                  placeholder={`e.g. Won 1st prize in ${field.replace(/_/g, " ")} competition`}
                   minRows={2}
                   required
                   maxLength={500}
@@ -406,6 +433,8 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
                 />
               </Grid.Col>
             ))}
+          </Grid>
+          <Grid gutter="md" mt="md">
             <Grid.Col span={12}>
               <input
                 id={marksheetInputId}
@@ -431,6 +460,7 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
                   readOnly
                   mt="sm"
                   label="Uploaded File"
+                  styles={inputStyles}
                 />
               )}
               {editData?.relevant_document && (
@@ -440,6 +470,7 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
                     href={editData.relevant_document}
                     target="_blank"
                     rel="noreferrer"
+                    style={{ textDecoration: "underline" }}
                   >
                     View Document
                   </a>

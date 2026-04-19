@@ -14,6 +14,7 @@ import {
   Textarea,
   FileInput,
   Divider,
+  Stack,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconUpload } from "@tabler/icons-react";
@@ -59,7 +60,7 @@ export default function ScholarshipForm({
     editData?.father_occ_desc || "",
   );
   const [motherOcc, setMotherOcc] = useState(
-    editData?.mother_occ || "HOUSE_WIFE",
+    editData?.mother_occ || "house_wife",
   );
   const [motherOccDesc, setMotherOccDesc] = useState(
     editData?.mother_occ_desc || "",
@@ -109,8 +110,8 @@ export default function ScholarshipForm({
   ];
 
   const motherOccOptions = [
-    { value: "EMPLOYED", label: "Employed" },
-    { value: "HOUSE_WIFE", label: "Housewife" },
+    ...fatherOccOptions,
+    { value: "house_wife", label: "Housewife" },
   ];
 
   const categoryOptions = [
@@ -187,6 +188,8 @@ export default function ScholarshipForm({
     if (!semester) e.semester = "Required";
     if (!incomeFather && incomeFather !== 0) e.incomeFather = "Required";
     if (incomeFather && incomeFather < 0) e.incomeFather = "Invalid amount";
+    if (!incomeMother && incomeMother !== 0) e.incomeMother = "Required";
+    if (incomeMother && incomeMother < 0) e.incomeMother = "Invalid amount";
 
     // Eligibility check
     const bName =
@@ -233,6 +236,30 @@ export default function ScholarshipForm({
       notifications.show({
         title: "File Size Error",
         message: "One or more files exceed the 2MB size limit.",
+        color: "red",
+      });
+      return;
+    }
+
+    const requiredDocumentKeys = [
+      "income_certificate",
+      "marksheet",
+      "bank_details",
+      "aadhar_card",
+    ];
+    const missingRequiredDocs = requiredDocumentKeys.filter(
+      (key) => !documents[key] && !editData?.[key],
+    );
+    if (missingRequiredDocs.length > 0) {
+      const requiredDocErrors = missingRequiredDocs.reduce((acc, key) => {
+        acc[key] = "This document is required";
+        return acc;
+      }, {});
+      setFileErrors((prev) => ({ ...prev, ...requiredDocErrors }));
+      notifications.show({
+        title: "Missing Documents",
+        message:
+          "Upload all required documents: Income Certificate, Marksheet, Bank Account Details, and Aadhar Card.",
         color: "red",
       });
       return;
@@ -308,14 +335,29 @@ export default function ScholarshipForm({
   };
 
   const currentDocs = [
-    { key: "income_certificate", label: "Income Certificate" },
-    { key: "forms", label: "Signed Forms / Applications" },
-    { key: "marksheet", label: "Marksheet" },
-    { key: "fee_receipt", label: "Fee Receipt" },
-    { key: "bank_details", label: "Bank Account Details" },
-    { key: "affidavit", label: "Affidavit" },
-    { key: "aadhar_card", label: "Aadhar Card" },
+    { key: "income_certificate", label: "Income Certificate", required: true },
+    { key: "forms", label: "Signed Forms / Applications", required: false },
+    { key: "marksheet", label: "Marksheet", required: true },
+    { key: "fee_receipt", label: "Fee Receipt", required: false },
+    { key: "bank_details", label: "Bank Account Details", required: true },
+    { key: "affidavit", label: "Affidavit", required: false },
+    { key: "aadhar_card", label: "Aadhar Card", required: true },
   ];
+
+  const inputStyles = {
+    input: {
+      height: "42px",
+      minHeight: "42px",
+    },
+    root: {
+      width: "100%",
+    },
+    label: {
+      "&[data-required]::after": {
+        color: "var(--mantine-color-red-6)",
+      },
+    },
+  };
 
   return (
     <Container size="lg">
@@ -330,187 +372,221 @@ export default function ScholarshipForm({
         </Text>
 
         <form onSubmit={handleSubmit}>
-          {/* Basic Information */}
-          <Divider label="Basic Information" mb="xl" />
-          <Grid gutter="xl">
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <Select
-                label="Scholarship Type"
-                data={scholarshipOptions}
-                value={scholarshipType}
-                onChange={setScholarshipType}
-                required
-                error={errors.scholarshipType}
-                mb="md"
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <Select
-                label="Category"
-                data={categoryOptions}
-                value={category}
-                onChange={setCategory}
-                required
-                error={errors.category}
-                mb="md"
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 4 }}>
-              <NumberInput
-                label="CPI"
-                value={cpi}
-                onChange={setCpi}
-                required
-                error={errors.cpi}
-                min={0}
-                max={10}
-                precision={2}
-                step={0.1}
-                mb="md"
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 4 }}>
-              <TextInput
-                label="Academic Year"
-                value={academicYear}
-                onChange={(e) => setAcademicYear(e.target.value)}
-                required
-                error={errors.academicYear}
-                mb="md"
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 4 }}>
-              <Select
-                label="Semester"
-                data={Array.from({ length: 8 }, (_, i) => String(i + 1))}
-                value={semester}
-                onChange={setSemester}
-                required
-                error={errors.semester}
-                mb="md"
-              />
-            </Grid.Col>
-          </Grid>
+          <Stack gap="xl">
+            {/* Basic Information */}
+            <div>
+              <Divider label="Basic Information" mt="md" mb="xl" />
+              <Grid gutter={{ base: "md", sm: "xl" }}>
+                <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
+                  <Select
+                    label="Scholarship Type"
+                    placeholder="Pick scholarship type"
+                    data={scholarshipOptions}
+                    value={scholarshipType}
+                    onChange={setScholarshipType}
+                    required
+                    error={errors.scholarshipType}
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
+                  <Select
+                    label="Category"
+                    placeholder="Select your category"
+                    data={categoryOptions}
+                    value={category}
+                    onChange={setCategory}
+                    required
+                    error={errors.category}
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+              </Grid>
+              <Grid
+                gutter={{ base: "md", sm: "xl" }}
+                mt="md"
+                align="flex-start"
+              >
+                <Grid.Col span={{ base: 12, sm: 4 }} px="sm">
+                  <TextInput
+                    label="CPI"
+                    placeholder="e.g. 8.5"
+                    value={cpi}
+                    onChange={(e) => setCpi(e.target.value)}
+                    required
+                    error={errors.cpi}
+                    type="number"
+                    min={0}
+                    max={10}
+                    step="0.01"
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 4 }} px="sm">
+                  <TextInput
+                    label="Academic Year"
+                    placeholder="e.g. 2024-25"
+                    value={academicYear}
+                    onChange={(e) => setAcademicYear(e.target.value)}
+                    required
+                    error={errors.academicYear}
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 4 }} px="sm">
+                  <Select
+                    label="Semester"
+                    placeholder="Select semester"
+                    data={Array.from({ length: 8 }, (_, i) => String(i + 1))}
+                    value={semester}
+                    onChange={setSemester}
+                    required
+                    error={errors.semester}
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+              </Grid>
+            </div>
 
-          {/* Income Details */}
-          <Divider label="Family Income (Annual)" mt="xl" mb="xl" />
-          <Grid gutter="xl">
-            <Grid.Col span={{ base: 12, sm: 4 }}>
-              <NumberInput
-                label="Father's Income (₹)"
-                value={incomeFather}
-                onChange={setIncomeFather}
-                required
-                error={errors.incomeFather}
-                min={0}
-                thousandSeparator=","
-                mb="md"
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 4 }}>
-              <NumberInput
-                label="Mother's Income (₹)"
-                value={incomeMother}
-                onChange={setIncomeMother}
-                min={0}
-                thousandSeparator=","
-                mb="md"
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 4 }}>
-              <NumberInput
-                label="Other Sources Income (₹)"
-                value={incomeOther}
-                onChange={setIncomeOther}
-                min={0}
-                thousandSeparator=","
-                mb="md"
-              />
-            </Grid.Col>
-          </Grid>
+            {/* Income Details */}
+            <div>
+              <Divider label="Family Income (Annual)" mt="md" mb="xl" />
+              <Grid gutter={{ base: "md", sm: "xl" }}>
+                <Grid.Col span={{ base: 12, sm: 4 }} px="sm">
+                  <NumberInput
+                    label="Father's Income (₹)"
+                    placeholder="e.g. 450000"
+                    value={incomeFather}
+                    onChange={setIncomeFather}
+                    required
+                    error={errors.incomeFather}
+                    min={0}
+                    thousandSeparator=","
+                    hideControls
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 4 }} px="sm">
+                  <NumberInput
+                    label="Mother's Income (₹)"
+                    placeholder="e.g. 0 (if housewife)"
+                    value={incomeMother}
+                    onChange={setIncomeMother}
+                    required
+                    error={errors.incomeMother}
+                    min={0}
+                    thousandSeparator=","
+                    hideControls
+                    rightSectionWidth={0}
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 4 }} px="sm">
+                  <NumberInput
+                    label="Other Sources Income (₹)"
+                    placeholder="e.g. 20000 (Rent etc)"
+                    value={incomeOther}
+                    onChange={setIncomeOther}
+                    min={0}
+                    thousandSeparator=","
+                    hideControls
+                    rightSectionWidth={0}
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+              </Grid>
+            </div>
 
-          {/* Occupations */}
-          <Divider label="Family Occupation" mt="xl" mb="xl" />
-          <Grid gutter="xl">
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <Select
-                label="Father's Occupation"
-                data={fatherOccOptions}
-                value={fatherOcc}
-                onChange={setFatherOcc}
-                mb="md"
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <TextInput
-                label="Father's Occupation Details"
-                value={fatherOccDesc}
-                onChange={(e) => setFatherOccDesc(e.target.value)}
-                placeholder="e.g. Business details or Govt. Dept"
-                mb="md"
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <Select
-                label="Mother's Occupation"
-                data={motherOccOptions}
-                value={motherOcc}
-                onChange={setMotherOcc}
-                mb="md"
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6 }}>
-              <TextInput
-                label="Mother's Occupation Details"
-                value={motherOccDesc}
-                onChange={(e) => setMotherOccDesc(e.target.value)}
-                mb="md"
-              />
-            </Grid.Col>
-          </Grid>
+            {/* Occupations */}
+            <div>
+              <Divider label="Family Occupation" mt="md" mb="xl" />
+              <Grid gutter={{ base: "md", sm: "xl" }}>
+                <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
+                  <Select
+                    label="Father's Occupation"
+                    placeholder="Pick occupation"
+                    data={fatherOccOptions}
+                    value={fatherOcc}
+                    onChange={setFatherOcc}
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
+                  <TextInput
+                    label="Father's Occupation Details"
+                    value={fatherOccDesc}
+                    onChange={(e) => setFatherOccDesc(e.target.value)}
+                    placeholder="e.g. Clerk at PWD or Small Business"
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
+                  <Select
+                    label="Mother's Occupation"
+                    placeholder="Pick occupation"
+                    data={motherOccOptions}
+                    value={motherOcc}
+                    onChange={setMotherOcc}
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 6 }} px="sm">
+                  <TextInput
+                    label="Mother's Occupation Details"
+                    value={motherOccDesc}
+                    onChange={(e) => setMotherOccDesc(e.target.value)}
+                    placeholder="e.g. Teacher or N/A"
+                    styles={inputStyles}
+                  />
+                </Grid.Col>
+              </Grid>
+            </div>
 
-          {/* Documents & Remarks */}
-          <Divider label="Documents & Additional Details" mt="xl" mb="xl" />
-          <Grid gutter="xl">
-            {currentDocs.map((doc) => (
-              <Grid.Col span={{ base: 12, sm: 6 }} key={doc.key}>
-                <FileInput
-                  label={doc.label}
-                  placeholder={`Upload ${doc.label}`}
-                  leftSection={<IconUpload size={16} />}
-                  value={documents[doc.key]}
-                  onChange={(file) => handleDocumentChange(doc.key, file)}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  mb="xs"
-                  error={fileErrors[doc.key]}
-                  description="Max size: 2MB"
-                />
-                {editData?.[doc.key] && !documents[doc.key] && (
-                  <Text size="sm" mt="xs" color="blue">
-                    ✓ Attached:{" "}
-                    <a
-                      href={editData[doc.key]}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ textDecoration: "underline" }}
-                    >
-                      View Saved Document
-                    </a>
-                  </Text>
-                )}
-              </Grid.Col>
-            ))}
-            <Grid.Col span={12}>
-              <Textarea
-                label="Additional Remarks"
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                minRows={3}
-                placeholder="Any special circumstances or details we should know about..."
-                mb="xl"
-              />
-            </Grid.Col>
-          </Grid>
+            {/* Documents & Remarks */}
+            <div>
+              <Divider label="Documents & Additional Details" mt="md" mb="xl" />
+              <Grid gutter={{ base: "md", sm: "xl" }}>
+                {currentDocs.map((doc) => (
+                  <Grid.Col span={{ base: 12, sm: 6 }} key={doc.key} px="sm">
+                    <FileInput
+                      label={doc.label}
+                      withAsterisk={doc.required}
+                      placeholder={`Upload ${doc.label} (Max 2MB)`}
+                      leftSection={<IconUpload size={16} />}
+                      value={documents[doc.key]}
+                      onChange={(file) => handleDocumentChange(doc.key, file)}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      error={fileErrors[doc.key]}
+                      styles={inputStyles}
+                    />
+                    {editData?.[doc.key] && !documents[doc.key] && (
+                      <Text size="sm" mt="xs" color="blue">
+                        ✓ Attached:{" "}
+                        <a
+                          href={editData[doc.key]}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ textDecoration: "underline" }}
+                        >
+                          View Saved Document
+                        </a>
+                      </Text>
+                    )}
+                  </Grid.Col>
+                ))}
+                <Grid.Col span={12} px="sm">
+                  <Textarea
+                    label="Additional Remarks"
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    minRows={3}
+                    placeholder="e.g. Supporting documents attached for special consideration..."
+                    mt="md"
+                  />
+                </Grid.Col>
+              </Grid>
+            </div>
+          </Stack>
 
           <Group justify="flex-end" mt="xl" pt="md">
             <Button
