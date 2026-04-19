@@ -350,6 +350,7 @@ function MCMConvenerView() {
               ["Fee Receipt", selectedFiles.Fee_Receipt],
               ["Marksheet", selectedFiles.Marksheet],
               ["Income Certificate", selectedFiles.income_certificate],
+              ["Application Forms", selectedFiles.forms],
             ].map(([label, path]) =>
               path ? (
                 <a

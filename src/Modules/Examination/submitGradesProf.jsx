@@ -15,13 +15,14 @@ import {
   Title,
 } from "@mantine/core";
 import axios from "axios";
+import { useSelector } from "react-redux";
+import { FileArrowDown, Upload } from "@phosphor-icons/react";
 import {
   submitGradesProf,
   download_template,
   upload_grades_prof,
 } from "./routes/examinationRoutes";
-import { FileArrowDown, Upload } from "@phosphor-icons/react";
-import { useSelector } from "react-redux";
+
 function SubmitGradesProf() {
   const [year, setYear] = useState("");
   const [course, setCourse] = useState("");
@@ -52,9 +53,9 @@ function SubmitGradesProf() {
         });
 
         // Format courses for dropdown
-        const formattedCourses = data.courses_info.map((course) => ({
-          value: course.id.toString(),
-          label: `${course.code} - ${course.name}`,
+        const formattedCourses = data.courses_info.map((c) => ({
+          value: c.id.toString(),
+          label: `${c.code} - ${c.name}`,
         }));
 
         // Extract unique years
@@ -98,7 +99,7 @@ function SubmitGradesProf() {
       const requestData = {
         Role: userRole,
         course,
-        year: parseInt(year),
+        year: parseInt(year, 10),
       };
 
       const response = await axios.post(download_template, requestData, {
@@ -114,9 +115,9 @@ function SubmitGradesProf() {
       link.click();
       document.body.removeChild(link);
       setSuccess("Template downloaded successfully!");
-    } catch (error) {
+    } catch (e) {
       setError(
-        `Error downloading template: ${error.response?.data?.error || error.message}`,
+        `Error downloading template: ${e.response?.data?.error || e.message}`,
       );
     } finally {
       setLoading(false);
@@ -149,7 +150,7 @@ function SubmitGradesProf() {
       formData.append("course_id", course);
       formData.append("academic_year", year);
 
-      const response = await axios.post(upload_grades_prof, formData, {
+      await axios.post(upload_grades_prof, formData, {
         headers: {
           Authorization: `Token ${token}`,
           "Content-Type": "multipart/form-data",
@@ -161,12 +162,12 @@ function SubmitGradesProf() {
       );
       // Reset file selection
       setExcelFile(null);
-    } catch (error) {
-      if (error.response) {
-        switch (error.response.status) {
+    } catch (err) {
+      if (err.response) {
+        switch (err.response.status) {
           case 400:
             setError(
-              `Invalid input: ${error.response.data.error || "Please check your CSV file format."}`,
+              `Invalid input: ${err.response.data.error || "Please check your CSV file format."}`,
             );
             break;
           case 403:
@@ -176,11 +177,11 @@ function SubmitGradesProf() {
             break;
           default:
             setError(
-              `Error uploading grades: ${error.response.data.error || error.message}`,
+              `Error uploading grades: ${err.response.data.error || err.message}`,
             );
         }
       } else {
-        setError(`Network error: ${error.message}`);
+        setError(`Network error: ${err.message}`);
       }
     } finally {
       setLoading(false);

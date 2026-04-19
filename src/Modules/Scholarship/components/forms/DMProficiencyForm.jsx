@@ -60,7 +60,7 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
       ece_percentage: editData?.ece_percentage || "",
       mech_percentage: editData?.mech_percentage || "",
       design_percentage: editData?.design_percentage || "",
-      Marksheet: null,
+      relevant_document: null,
     },
     validate: {
       grand_total: (value) =>
@@ -165,7 +165,7 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
           award_type: AWARD_TYPE,
           draft_data: {
             ...form.values,
-            Marksheet: null, // Don't save file object
+            relevant_document: null, // Don't save file object
           },
         }),
       });
@@ -187,7 +187,7 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
           award_type: AWARD_TYPE,
           draft_data: {
             ...form.values,
-            Marksheet: null,
+            relevant_document: null,
           },
         }),
       });
@@ -212,7 +212,7 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.values.Marksheet) {
+    if (!form.values.relevant_document && !editData?.relevant_document) {
       setNotification({
         title: "Error",
         message: "Marksheet is required. Please upload a file.",
@@ -461,7 +461,7 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
                     style={{ display: "none" }}
                     onChange={(e) =>
                       form.setFieldValue(
-                        "Marksheet",
+                        "relevant_document",
                         e.target.files?.[0] ?? null,
                       )
                     }
@@ -473,9 +473,9 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
                   >
                     Upload Marksheet (PDF)
                   </Button>
-                  {form.values.Marksheet?.name && (
+                  {form.values.relevant_document?.name && (
                     <TextInput
-                      value={form.values.Marksheet.name}
+                      value={form.values.relevant_document.name}
                       readOnly
                       mt="sm"
                       label="Uploaded File"

@@ -72,6 +72,7 @@ export default function ScholarshipForm({
   // Document states
   const [documents, setDocuments] = useState({
     income_certificate: null,
+    forms: null,
     marksheet: null,
     fee_receipt: null,
     bank_details: null,
@@ -286,6 +287,7 @@ export default function ScholarshipForm({
 
   const currentDocs = [
     { key: "income_certificate", label: "Income Certificate" },
+    { key: "forms", label: "Signed Forms / Applications" },
     { key: "marksheet", label: "Marksheet" },
     { key: "fee_receipt", label: "Fee Receipt" },
     { key: "bank_details", label: "Bank Account Details" },
@@ -526,6 +528,7 @@ ScholarshipForm.propTypes = {
     income_mother: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     income_other: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     income_certificate: PropTypes.string,
+    forms: PropTypes.string,
     marksheet: PropTypes.string,
     fee_receipt: PropTypes.string,
     bank_details: PropTypes.string,

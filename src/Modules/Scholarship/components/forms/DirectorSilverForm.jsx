@@ -35,7 +35,7 @@ export default function DirectorSilverForm({
 }) {
   const [formData, setFormData] = useState({
     award_type: "Director's Silver",
-    Marksheet: null,
+    relevant_document: null,
     justification: editData?.justification || "",
     correspondence_address: editData?.correspondence_address || "",
     nearest_policestation: editData?.nearest_policestation || "",
@@ -126,7 +126,7 @@ export default function DirectorSilverForm({
           award_type: AWARD_TYPE,
           draft_data: {
             ...formData,
-            Marksheet: null, // Don't save file object
+            relevant_document: null, // Don't save file object
           },
         }),
       });
@@ -141,7 +141,7 @@ export default function DirectorSilverForm({
   };
 
   const handleFileChange = (file) => {
-    setFormData((prev) => ({ ...prev, Marksheet: file }));
+    setFormData((prev) => ({ ...prev, relevant_document: file }));
   };
 
   const handleSaveDraft = async () => {
@@ -157,7 +157,7 @@ export default function DirectorSilverForm({
           award_type: AWARD_TYPE,
           draft_data: {
             ...formData,
-            Marksheet: null,
+            relevant_document: null,
           },
         }),
       });
@@ -180,7 +180,7 @@ export default function DirectorSilverForm({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.Marksheet) {
+    if (!formData.relevant_document && !editData?.relevant_document) {
       setNotification({
         title: "Error",
         message: "Marksheet is required. Please upload a file.",
@@ -189,9 +189,9 @@ export default function DirectorSilverForm({
       return;
     }
 
-    const err = validateGrandTotal(formData.grand_total);
-    if (err) {
-      setGrandTotalError(err);
+    const validationErr = validateGrandTotal(formData.grand_total);
+    if (validationErr) {
+      setGrandTotalError(validationErr);
       return;
     }
 
@@ -358,9 +358,9 @@ export default function DirectorSilverForm({
               <Button fullWidth component="label" htmlFor={marksheetInputId}>
                 Upload Marksheet (PDF)
               </Button>
-              {formData.Marksheet && (
+              {formData.relevant_document && (
                 <TextInput
-                  value={formData.Marksheet.name}
+                  value={formData.relevant_document.name}
                   readOnly
                   mt="sm"
                   label="Uploaded File"

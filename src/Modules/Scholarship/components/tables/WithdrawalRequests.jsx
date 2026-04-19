@@ -13,11 +13,41 @@ import {
   Container,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { Eye, CheckCircle, XCircle } from "@phosphor-icons/react";
+import {
+  Eye,
+  CheckCircle,
+  XCircle,
+  DownloadSimple,
+} from "@phosphor-icons/react";
 import {
   listWithdrawalsRoute,
   acknowledgeWithdrawalRoute,
 } from "../../../../routes/SPACSRoutes";
+
+const DOC_LABEL_MAP = {
+  forms: "Application Forms",
+  relevant_document: "Relevant Document",
+  income_certificate: "Income Certificate",
+  marksheet: "Marksheet",
+  receipt: "Receipt",
+  affidavit: "Affidavit",
+};
+
+const isDocumentKey = (key, value) => {
+  const k = key.toLowerCase();
+  const v = String(value).toLowerCase();
+  const isDocPattern =
+    k.includes("certificate") ||
+    k.includes("marksheet") ||
+    k.includes("receipt") ||
+    k.includes("details") ||
+    k.includes("affidavit") ||
+    k.includes("card") ||
+    k.includes("forms") ||
+    k.includes("document");
+
+  return isDocPattern || v.startsWith("http") || v.endsWith(".pdf");
+};
 
 function WithdrawalRequests() {
   const [withdrawals, setWithdrawals] = useState([]);
@@ -322,7 +352,8 @@ function WithdrawalRequests() {
                           "semester",
                         ].includes(key) &&
                         val &&
-                        typeof val !== "object",
+                        typeof val !== "object" &&
+                        !isDocumentKey(key, val),
                     )
                     .map(([key, val]) => (
                       <div
@@ -345,6 +376,35 @@ function WithdrawalRequests() {
                       </div>
                     ))}
                 </div>
+
+                <Text fw={700} mt="lg" mb="sm" size="sm">
+                  Documents
+                </Text>
+                <Group gap="xs">
+                  {Object.entries(viewModal.req.application_data)
+                    .filter(([key, val]) => val && isDocumentKey(key, val))
+                    .map(([key, val]) => (
+                      <Button
+                        key={key}
+                        component="a"
+                        href={val}
+                        target="_blank"
+                        variant="light"
+                        color="blue"
+                        size="compact-sm"
+                        leftSection={<DownloadSimple size={14} />}
+                      >
+                        {DOC_LABEL_MAP[key] || key.replace(/_/g, " ")}
+                      </Button>
+                    ))}
+                  {Object.entries(viewModal.req.application_data).filter(
+                    ([key, val]) => val && isDocumentKey(key, val),
+                  ).length === 0 && (
+                    <Text c="dimmed" size="xs">
+                      No documents attached.
+                    </Text>
+                  )}
+                </Group>
               </>
             ) : (
               <Text c="red" size="sm">

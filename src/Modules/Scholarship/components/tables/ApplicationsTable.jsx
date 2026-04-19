@@ -37,6 +37,31 @@ const STATUS_CONFIG = {
   REJECTED: { color: "red", label: "REJECTED" },
 };
 
+const DOC_LABEL_MAP = {
+  forms: "Application Forms",
+  relevant_document: "Relevant Document",
+  income_certificate: "Income Certificate",
+  marksheet: "Marksheet",
+  receipt: "Receipt",
+  affidavit: "Affidavit",
+};
+
+const isDocumentKey = (key, value) => {
+  const k = key.toLowerCase();
+  const v = String(value).toLowerCase();
+  const isDocPattern =
+    k.includes("certificate") ||
+    k.includes("marksheet") ||
+    k.includes("receipt") ||
+    k.includes("details") ||
+    k.includes("affidavit") ||
+    k.includes("card") ||
+    k.includes("forms") ||
+    k.includes("document");
+
+  return isDocPattern || v.startsWith("http") || v.endsWith(".pdf");
+};
+
 function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status?.toUpperCase()] || {
     color: "gray",
@@ -634,10 +659,12 @@ function ApplicationsTable({ onApply, onEdit }) {
                         "date",
                         "type_name",
                         "key_type",
+                        "withdrawal_pending",
                       ].includes(key) &&
                       value !== null &&
                       value !== "" &&
-                      typeof value !== "object",
+                      typeof value !== "object" &&
+                      !isDocumentKey(key, value),
                   )
                   .map(([key, value]) => (
                     <Table.Tr key={key}>
@@ -659,17 +686,7 @@ function ApplicationsTable({ onApply, onEdit }) {
             </Text>
             <Group gap="xs">
               {Object.entries(viewModal.app)
-                .filter(
-                  ([key, value]) =>
-                    (key.toLowerCase().includes("certificate") ||
-                      key.toLowerCase().includes("marksheet") ||
-                      key.toLowerCase().includes("receipt") ||
-                      key.toLowerCase().includes("details") ||
-                      key.toLowerCase().includes("affidavit") ||
-                      key.toLowerCase().includes("card") ||
-                      key.toLowerCase().includes("document")) &&
-                    value,
-                )
+                .filter(([key, value]) => value && isDocumentKey(key, value))
                 .map(([key, value]) => (
                   <Button
                     key={key}
@@ -681,19 +698,11 @@ function ApplicationsTable({ onApply, onEdit }) {
                     size="compact-sm"
                     leftSection={<DownloadSimple size={14} />}
                   >
-                    {key.replace(/_/g, " ")}
+                    {DOC_LABEL_MAP[key] || key.replace(/_/g, " ")}
                   </Button>
                 ))}
               {Object.entries(viewModal.app).filter(
-                ([key, value]) =>
-                  (key.toLowerCase().includes("certificate") ||
-                    key.toLowerCase().includes("marksheet") ||
-                    key.toLowerCase().includes("receipt") ||
-                    key.toLowerCase().includes("details") ||
-                    key.toLowerCase().includes("affidavit") ||
-                    key.toLowerCase().includes("card") ||
-                    key.toLowerCase().includes("document")) &&
-                  value,
+                ([key, value]) => value && isDocumentKey(key, value),
               ).length === 0 && (
                 <Text c="dimmed" size="sm">
                   No documents attached.
