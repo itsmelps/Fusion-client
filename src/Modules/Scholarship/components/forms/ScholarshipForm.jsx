@@ -35,6 +35,9 @@ export default function ScholarshipForm({
   const user = useSelector((state) => state.user);
   const studentId = user?.username || user?.roll_no || "Student";
   const [submitting, setSubmitting] = useState(false);
+  const [fileErrors, setFileErrors] = useState({});
+
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
   // Form State
   const [category, setCategory] = useState(editData?.category || "");
@@ -81,7 +84,16 @@ export default function ScholarshipForm({
   });
 
   const handleDocumentChange = (field, file) => {
-    setDocuments((prev) => ({ ...prev, [field]: file }));
+    if (file && file.size > MAX_FILE_SIZE) {
+      setFileErrors((prev) => ({
+        ...prev,
+        [field]: `File exceeds 2MB limit (${(file.size / (1024 * 1024)).toFixed(2)}MB)`,
+      }));
+      setDocuments((prev) => ({ ...prev, [field]: null }));
+    } else {
+      setFileErrors((prev) => ({ ...prev, [field]: null }));
+      setDocuments((prev) => ({ ...prev, [field]: file }));
+    }
   };
 
   const [errors, setErrors] = useState({});
@@ -211,6 +223,16 @@ export default function ScholarshipForm({
       notifications.show({
         title: "Validation Error",
         message: "Please fill in all required fields correctly.",
+        color: "red",
+      });
+      return;
+    }
+
+    const hasFileErrors = Object.values(fileErrors).some((err) => !!err);
+    if (hasFileErrors) {
+      notifications.show({
+        title: "File Size Error",
+        message: "One or more files exceed the 2MB size limit.",
         color: "red",
       });
       return;
@@ -459,7 +481,9 @@ export default function ScholarshipForm({
                   value={documents[doc.key]}
                   onChange={(file) => handleDocumentChange(doc.key, file)}
                   accept=".pdf,.jpg,.jpeg,.png"
-                  mb="md"
+                  mb="xs"
+                  error={fileErrors[doc.key]}
+                  description="Max size: 2MB"
                 />
                 {editData?.[doc.key] && !documents[doc.key] && (
                   <Text size="sm" mt="xs" color="blue">

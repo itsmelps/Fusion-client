@@ -35,6 +35,8 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
   const [duplicateWarning, setDuplicateWarning] = useState(false);
   const [notification, setNotification] = useState(null);
 
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+
   const form = useForm({
     initialValues: {
       award_type: "D&M Proficiency Gold Medal",
@@ -216,6 +218,17 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
       setNotification({
         title: "Error",
         message: "Marksheet is required. Please upload a file.",
+        color: "red",
+      });
+      return;
+    }
+    if (
+      form.values.relevant_document &&
+      form.values.relevant_document.size > MAX_FILE_SIZE
+    ) {
+      setNotification({
+        title: "Error",
+        message: `File size exceeds 2MB limit (Current: ${(form.values.relevant_document.size / (1024 * 1024)).toFixed(2)}MB)`,
         color: "red",
       });
       return;
@@ -473,6 +486,20 @@ export default function DMProficiencyForm({ onCancel, onSubmitted, editData }) {
                   >
                     Upload Marksheet (PDF)
                   </Button>
+                  <Text size="xs" color="dimmed" mt={4} textAlign="center">
+                    Max size: 2MB (PDF only)
+                  </Text>
+                  {form.values.relevant_document &&
+                    form.values.relevant_document.size > MAX_FILE_SIZE && (
+                      <Text color="red" size="sm" mt="xs">
+                        File size exceeds 2MB limit (Current:{" "}
+                        {(
+                          form.values.relevant_document.size /
+                          (1024 * 1024)
+                        ).toFixed(2)}
+                        MB)
+                      </Text>
+                    )}
                   {form.values.relevant_document?.name && (
                     <TextInput
                       value={form.values.relevant_document.name}

@@ -58,6 +58,9 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
   const [draftLoading, setDraftLoading] = useState(true);
   const [duplicateWarning, setDuplicateWarning] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [fileError, setFileError] = useState("");
+
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
   // BR-SPACS-007: Load draft on mount
   useEffect(() => {
@@ -149,7 +152,15 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
   };
 
   const handleFileChange = (file) => {
-    setFormData((prev) => ({ ...prev, relevant_document: file }));
+    if (file && file.size > MAX_FILE_SIZE) {
+      setFileError(
+        `File size exceeds 2MB limit (Current: ${(file.size / (1024 * 1024)).toFixed(2)}MB)`,
+      );
+      setFormData((prev) => ({ ...prev, relevant_document: null }));
+    } else {
+      setFileError("");
+      setFormData((prev) => ({ ...prev, relevant_document: file }));
+    }
   };
 
   const handleSaveDraft = async () => {
@@ -192,6 +203,15 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
       setNotification({
         title: "Error",
         message: "Marksheet is required. Please upload a file.",
+        color: "red",
+      });
+      return;
+    }
+
+    if (fileError) {
+      setNotification({
+        title: "Error",
+        message: "Please upload a file within the 2MB size limit.",
         color: "red",
       });
       return;
@@ -397,6 +417,14 @@ export default function DirectorGoldForm({ onCancel, onSubmitted, editData }) {
               <Button fullWidth component="label" htmlFor={marksheetInputId}>
                 Upload Marksheet (PDF)
               </Button>
+              <Text size="xs" color="dimmed" mt={4} textAlign="center">
+                Max size: 2MB (PDF only)
+              </Text>
+              {fileError && (
+                <Text color="red" size="sm" mt="xs">
+                  {fileError}
+                </Text>
+              )}
               {formData.relevant_document && (
                 <TextInput
                   value={formData.relevant_document.name}
